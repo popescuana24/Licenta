@@ -1,0 +1,23 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v9.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v9.0": {
+      "ClothingWebApp/1.0.0": {
+        "runtime": {
+          "ClothingWebApp.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "ClothingWebApp/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
