@@ -95,3 +95,4 @@ C:\Users\popes\ClothingWebApp\obj\Debug\net9.0\refint\ClothingWebApp.dll
 C:\Users\popes\ClothingWebApp\obj\Debug\net9.0\ClothingWebApp.pdb
 C:\Users\popes\ClothingWebApp\obj\Debug\net9.0\ClothingWebApp.genruntimeconfig.cache
 C:\Users\popes\ClothingWebApp\obj\Debug\net9.0\ref\ClothingWebApp.dll
+C:\Users\popes\ClothingWebApp\obj\Debug\net9.0\ClothingWebApp.sourcelink.json
