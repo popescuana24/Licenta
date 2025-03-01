@@ -1,0 +1,57 @@
+@model ClothingWebApp.Models.Customer
+
+@{
+    ViewData["Title"] = "My Profile";
+}
+
+<div class="container mt-4">
+    <h1>My Profile</h1>
+    
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>Personal Information</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <p class="fw-bold">Name:</p>
+                </div>
+                <div class="col-md-9">
+                    <p>@Model.FirstName @Model.LastName</p>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-3">
+                    <p class="fw-bold">Email:</p>
+                </div>
+                <div class="col-md-9">
+                    <p>@Model.Email</p>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-3">
+                    <p class="fw-bold">Address:</p>
+                </div>
+                <div class="col-md-9">
+                    <p>@Model.Address</p>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer">
+            <a asp-action="EditProfile" class="btn btn-primary">Edit Profile</a>
+            <a asp-action="ChangePassword" class="btn btn-secondary">Change Password</a>
+        </div>
+    </div>
+    
+    <div class="mt-4">
+        <a asp-controller="Order" asp-action="History" class="btn btn-outline-primary">Order History</a>
+        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary">Back to Homepage</a>
+    </div>
+</div>

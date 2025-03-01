@@ -1,0 +1,40 @@
+@model ClothingWebApp.Models.Product
+
+@{
+    ViewData["Title"] = Model.Name;
+}
+
+<div class="row mt-4">
+    <div class="col-md-5">
+        @if (!string.IsNullOrEmpty(Model.ImageUrl))
+        {
+            <img src="@Model.ImageUrl" class="img-fluid" alt="@Model.Name">
+        }
+        else
+        {
+            <div class="bg-light text-center p-5">No Image</div>
+        }
+    </div>
+    <div class="col-md-7">
+        <h1>@Model.Name</h1>
+        <h4 class="text-muted">@Model.Price.ToString("C")</h4>
+        
+        <div class="mb-3">
+            <span class="badge bg-primary">@Model.Color</span>
+            @if (!string.IsNullOrEmpty(Model.Size))
+            {
+                <span class="badge bg-secondary">@Model.Size</span>
+            }
+            <span class="badge bg-info">@Model.Category?.Name</span>
+        </div>
+        
+        <p>@Model.Description</p>
+        
+        <div class="mt-4">
+            <form asp-controller="Cart" asp-action="AddToCart" method="post">
+                <input type="hidden" name="productId" value="@Model.ProductId" />
+                <button type="submit" class="btn btn-success">Add to Cart</button>
+            </form>
+        </div>
+    </div>
+</div>
