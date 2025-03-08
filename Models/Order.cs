@@ -1,13 +1,10 @@
-namespace  ClothingWebApp.Models;
+namespace ClothingWebApp.Models;
 
 public class Order
 {
-     public required int OrderId { get; set; } 
+    public int OrderId { get; set; } // Changed from 'required' to allow setting
     public required int CustomerId { get; set; } 
     public required Customer Customer { get; set; }
     public required DateTime OrderDate { get; set; }
-    public required decimal TotalAmount { get; set; } 
-    
-   
+    public required decimal TotalAmount { get; set; }
 }
-

@@ -1,38 +1,29 @@
+using ClothingWebApp.Data;
 using ClothingWebApp.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;
-using System.Linq;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
-using System.Threading.Tasks;
 
 namespace ClothingWebApp.Controllers
 {
     public class AccountController : Controller
     {
-        // Temporary in-memory collection for customers
-        private static List<Customer> _customers = new List<Customer>
+        private readonly ApplicationDbContext _context;
+        
+        public AccountController(ApplicationDbContext context)
         {
-            new Customer
-            {
-                CustomerId = 1,
-                FirstName = "John",
-                LastName = "Doe",
-                Email = "john@example.com",
-                Address = "123 Main St",
-                Password = "password123"
-            }
-        };
-        private static int _nextCustomerId = 2;
-
+            _context = context;
+        }
+        
         // GET: Account/Login
         public IActionResult Login(string returnUrl = "")
         {
             ViewBag.ReturnUrl = returnUrl;
             return View();
         }
-
+        
         // POST: Account/Login
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -43,36 +34,23 @@ namespace ClothingWebApp.Controllers
                 ModelState.AddModelError("", "Email and password are required.");
                 return View();
             }
-
-            var customer = _customers.FirstOrDefault(c => 
-                c.Email.Equals(email, System.StringComparison.OrdinalIgnoreCase) && 
-                c.Password == password);
-
+            
+            var customer = await _context.Customers
+                .FirstOrDefaultAsync(c => c.Email.Equals(email) && c.Password == password);
+                
             if (customer == null)
             {
                 ModelState.AddModelError("", "Invalid email or password.");
                 return View();
             }
-
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.Name, $"{customer.FirstName} {customer.LastName}"),
-                new Claim(ClaimTypes.Email, customer.Email),
-                new Claim(ClaimTypes.NameIdentifier, customer.CustomerId.ToString()),
-                new Claim("CustomerId", customer.CustomerId.ToString())
-            };
-
-            var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             
-            await HttpContext.SignInAsync(
-                CookieAuthenticationDefaults.AuthenticationScheme,
-                new ClaimsPrincipal(claimsIdentity),
-                new AuthenticationProperties { IsPersistent = true });
-
+            await LoginUser(customer);
+            
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             {
                 return Redirect(returnUrl);
             }
+            
             return RedirectToAction("Index", "Home");
         }
 
@@ -81,71 +59,80 @@ namespace ClothingWebApp.Controllers
         {
             return View();
         }
-
+        
         // POST: Account/Register
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Register(Customer customer)
+        public async Task<IActionResult> Register(Customer customer)
         {
             if (ModelState.IsValid)
             {
-                if (_customers.Any(c => c.Email.Equals(customer.Email, System.StringComparison.OrdinalIgnoreCase)))
+                // Check if email already exists
+                var existingCustomer = await _context.Customers
+                    .FirstOrDefaultAsync(c => c.Email.Equals(customer.Email));
+                    
+                if (existingCustomer != null)
                 {
-                    ModelState.AddModelError("Email", "Email is already registered.");
+                    ModelState.AddModelError("", "Email already registered.");
                     return View(customer);
                 }
-
-                customer.CustomerId = _nextCustomerId++;
-                _customers.Add(customer);
-
-                TempData["SuccessMessage"] = "Registration successful! Please log in.";
-                return RedirectToAction(nameof(Login));
+                
+                // Add customer to database - don't set CustomerId
+                _context.Customers.Add(customer);
+                await _context.SaveChangesAsync();
+                
+                // Automatically log in the new user
+                await LoginUser(customer);
+                
+                TempData["SuccessMessage"] = "Registration successful!";
+                return RedirectToAction("Index", "Home");
             }
+            
             return View(customer);
         }
-
-        // POST: Account/Logout
-        [HttpPost]
-        [ValidateAntiForgeryToken]
+        
+        // GET: Account/Logout
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return RedirectToAction("Index", "Home");
         }
-
+        
         // GET: Account/Profile
-        public IActionResult Profile()
+        public async Task<IActionResult> Profile()
         {
-            int userId = GetCurrentUserId();
-            if (userId == 0)
+            int customerId = GetCurrentUserId();
+            
+            if (customerId == 0)
             {
-                return RedirectToAction(nameof(Login));
+                return RedirectToAction("Login");
             }
-
-            var customer = _customers.FirstOrDefault(c => c.CustomerId == userId);
+            
+            var customer = await _context.Customers.FindAsync(customerId);
             if (customer == null)
             {
                 return NotFound();
             }
-
+            
             return View(customer);
         }
         
         // GET: Account/EditProfile
-        public IActionResult EditProfile()
+        public async Task<IActionResult> EditProfile()
         {
-            int userId = GetCurrentUserId();
-            if (userId == 0)
+            int customerId = GetCurrentUserId();
+            
+            if (customerId == 0)
             {
-                return RedirectToAction(nameof(Login));
+                return RedirectToAction("Login");
             }
-
-            var customer = _customers.FirstOrDefault(c => c.CustomerId == userId);
+            
+            var customer = await _context.Customers.FindAsync(customerId);
             if (customer == null)
             {
                 return NotFound();
             }
-
+            
             return View(customer);
         }
         
@@ -154,103 +141,84 @@ namespace ClothingWebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditProfile(Customer customer)
         {
-            int userId = GetCurrentUserId();
-            if (userId == 0 || userId != customer.CustomerId)
-            {
-                return RedirectToAction(nameof(Login));
-            }
-
             if (ModelState.IsValid)
             {
-                var existingCustomer = _customers.FirstOrDefault(c => c.CustomerId == userId);
-                if (existingCustomer != null)
+                var existingCustomer = await _context.Customers.FindAsync(customer.CustomerId);
+                if (existingCustomer == null)
                 {
-                    // Update the customer information
-                    existingCustomer.FirstName = customer.FirstName;
-                    existingCustomer.LastName = customer.LastName;
-                    existingCustomer.Address = customer.Address;
-                    
-                    // Update authentication cookie to reflect name changes
-                    await UpdateAuthenticationCookie(existingCustomer);
-                    
-                    TempData["SuccessMessage"] = "Your profile has been updated successfully.";
-                    return RedirectToAction(nameof(Profile));
+                    return NotFound();
                 }
+                
+                existingCustomer.FirstName = customer.FirstName;
+                existingCustomer.LastName = customer.LastName;
+                existingCustomer.Address = customer.Address;
+                
+                await _context.SaveChangesAsync();
+                
+                TempData["SuccessMessage"] = "Profile updated successfully.";
+                return RedirectToAction(nameof(Profile));
             }
-
+            
             return View(customer);
         }
         
         // GET: Account/ChangePassword
         public IActionResult ChangePassword()
         {
-            int userId = GetCurrentUserId();
-            if (userId == 0)
+            if (GetCurrentUserId() == 0)
             {
-                return RedirectToAction(nameof(Login));
+                return RedirectToAction("Login");
             }
-
+            
             return View();
         }
         
         // POST: Account/ChangePassword
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult ChangePassword(string currentPassword, string newPassword, string confirmNewPassword)
+        public async Task<IActionResult> ChangePassword(string currentPassword, string newPassword, string confirmNewPassword)
         {
-            int userId = GetCurrentUserId();
-            if (userId == 0)
+            int customerId = GetCurrentUserId();
+            
+            if (customerId == 0)
             {
-                return RedirectToAction(nameof(Login));
+                return RedirectToAction("Login");
             }
-
-            var customer = _customers.FirstOrDefault(c => c.CustomerId == userId);
-            if (customer == null)
-            {
-                return NotFound();
-            }
-
+            
             if (string.IsNullOrEmpty(currentPassword) || string.IsNullOrEmpty(newPassword) || string.IsNullOrEmpty(confirmNewPassword))
             {
                 ModelState.AddModelError("", "All fields are required.");
                 return View();
             }
-
-            if (customer.Password != currentPassword)
-            {
-                ModelState.AddModelError("", "Current password is incorrect.");
-                return View();
-            }
-
+            
             if (newPassword != confirmNewPassword)
             {
                 ModelState.AddModelError("", "New password and confirmation do not match.");
                 return View();
             }
-
-            // Update the password
-            customer.Password = newPassword;
             
-            TempData["SuccessMessage"] = "Your password has been changed successfully.";
+            var customer = await _context.Customers.FindAsync(customerId);
+            if (customer == null)
+            {
+                return NotFound();
+            }
+            
+            if (customer.Password != currentPassword)
+            {
+                ModelState.AddModelError("", "Current password is incorrect.");
+                return View();
+            }
+            
+            customer.Password = newPassword;
+            await _context.SaveChangesAsync();
+            
+            TempData["SuccessMessage"] = "Password changed successfully.";
             return RedirectToAction(nameof(Profile));
         }
 
-        private int GetCurrentUserId()
+        // Helper method to login a user
+        private async Task LoginUser(Customer customer)
         {
-            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "CustomerId");
-            if (userIdClaim != null && int.TryParse(userIdClaim.Value, out int userId))
-            {
-                return userId;
-            }
-            return 0;
-        }
-        
-        private async Task UpdateAuthenticationCookie(Customer customer)
-        {
-            // Sign out the current user
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            
-            // Create updated claims
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, $"{customer.FirstName} {customer.LastName}"),
@@ -258,14 +226,25 @@ namespace ClothingWebApp.Controllers
                 new Claim(ClaimTypes.NameIdentifier, customer.CustomerId.ToString()),
                 new Claim("CustomerId", customer.CustomerId.ToString())
             };
-
+            
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             
-            // Sign in with updated claims
             await HttpContext.SignInAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme,
                 new ClaimsPrincipal(claimsIdentity),
                 new AuthenticationProperties { IsPersistent = true });
+        }
+        
+        // Helper method to get current user ID
+        private int GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst("CustomerId");
+            if (userIdClaim != null && int.TryParse(userIdClaim.Value, out int userId))
+            {
+                return userId;
+            }
+            
+            return 0;
         }
     }
 }

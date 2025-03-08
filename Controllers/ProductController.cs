@@ -1,92 +1,85 @@
+using ClothingWebApp.Data;
 using ClothingWebApp.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using System.Collections.Generic;
-using System.Linq;
+using Microsoft.EntityFrameworkCore;
 
 namespace ClothingWebApp.Controllers
 {
     public class ProductController : Controller
     {
-        private static List<Product> _products = new List<Product>();
-        private static int _nextProductId = 1;
+        private readonly ApplicationDbContext _context;
         
-        // GET: Product
-        public IActionResult Index()
+        public ProductController(ApplicationDbContext context)
         {
-            var products = _products.Select(p => {
-                if (p.Category == null)
-                {
-                    p.Category = GetDefaultCategory(p.CategoryId);
-                }
-                return p;
-            }).ToList();
+            _context = context;
+        }
+
+        // GET: Product
+        public async Task<IActionResult> Index()
+        {
+            var products = await _context.Products
+                .Include(p => p.Category)
+                .ToListAsync();
             
             return View(products);
         }
-        
+
         // GET: Product/Details/5
-        public IActionResult Details(int id)
+        public async Task<IActionResult> Details(int id)
         {
-            var product = _products.FirstOrDefault(p => p.ProductId == id);
+            var product = await _context.Products
+                .Include(p => p.Category)
+                .FirstOrDefaultAsync(p => p.ProductId == id);
+                
             if (product == null)
             {
                 return NotFound();
             }
             
-            if (product.Category == null)
-            {
-                product.Category = GetDefaultCategory(product.CategoryId);
-            }
-            
             return View(product);
         }
-        
+
         // GET: Product/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            ViewData["CategoryId"] = new SelectList(GetCategories(), "CategoryId", "Name");
+            ViewData["CategoryId"] = new SelectList(await _context.Categories.ToListAsync(), "CategoryId", "Name");
             return View();
         }
-        
+
         // POST: Product/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(Product product)
+        public async Task<IActionResult> Create(Product product)
         {
             if (ModelState.IsValid)
             {
-                product.ProductId = _nextProductId++;
-                
-                // Set the Category property
-                var category = GetCategories().FirstOrDefault(c => c.CategoryId == product.CategoryId);
-                product.Category = category ?? GetDefaultCategory(product.CategoryId);
-                
-                _products.Add(product);
+                _context.Add(product);
+                await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
             
-            ViewData["CategoryId"] = new SelectList(GetCategories(), "CategoryId", "Name", product.CategoryId);
+            ViewData["CategoryId"] = new SelectList(await _context.Categories.ToListAsync(), "CategoryId", "Name", product.CategoryId);
             return View(product);
         }
-        
+
         // GET: Product/Edit/5
-        public IActionResult Edit(int id)
+        public async Task<IActionResult> Edit(int id)
         {
-            var product = _products.FirstOrDefault(p => p.ProductId == id);
+            var product = await _context.Products.FindAsync(id);
             if (product == null)
             {
                 return NotFound();
             }
             
-            ViewData["CategoryId"] = new SelectList(GetCategories(), "CategoryId", "Name", product.CategoryId);
+            ViewData["CategoryId"] = new SelectList(await _context.Categories.ToListAsync(), "CategoryId", "Name", product.CategoryId);
             return View(product);
         }
-        
+
         // POST: Product/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Edit(int id, Product product)
+        public async Task<IActionResult> Edit(int id, Product product)
         {
             if (id != product.ProductId)
             {
@@ -95,79 +88,62 @@ namespace ClothingWebApp.Controllers
             
             if (ModelState.IsValid)
             {
-                var existingProduct = _products.FirstOrDefault(p => p.ProductId == id);
-                if (existingProduct != null)
+                try
                 {
-                    existingProduct.Name = product.Name;
-                    existingProduct.Description = product.Description;
-                     existingProduct.Price = product.Price;
-                    existingProduct.ImageUrl = product.ImageUrl;
-                    existingProduct.Color = product.Color;
-                    existingProduct.CategoryId = product.CategoryId;
-                    
-                    // Update Category property
-                    var category = GetCategories().FirstOrDefault(c => c.CategoryId == product.CategoryId);
-                    existingProduct.Category = category ?? GetDefaultCategory(product.CategoryId);
+                    _context.Update(product);
+                    await _context.SaveChangesAsync();
                 }
-                
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!ProductExists(product.ProductId))
+                    {
+                        return NotFound();
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
                 return RedirectToAction(nameof(Index));
             }
             
-            ViewData["CategoryId"] = new SelectList(GetCategories(), "CategoryId", "Name", product.CategoryId);
+            ViewData["CategoryId"] = new SelectList(await _context.Categories.ToListAsync(), "CategoryId", "Name", product.CategoryId);
             return View(product);
         }
-        
+
         // GET: Product/Delete/5
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            var product = _products.FirstOrDefault(p => p.ProductId == id);
+            var product = await _context.Products
+                .Include(p => p.Category)
+                .FirstOrDefaultAsync(p => p.ProductId == id);
+                
             if (product == null)
             {
                 return NotFound();
             }
             
-            if (product.Category == null)
-            {
-                product.Category = GetDefaultCategory(product.CategoryId);
-            }
-            
             return View(product);
         }
-        
+
         // POST: Product/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public IActionResult DeleteConfirmed(int id)
+        public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var product = _products.FirstOrDefault(p => p.ProductId == id);
+            var product = await _context.Products.FindAsync(id);
             if (product != null)
             {
-                _products.Remove(product);
+                _context.Products.Remove(product);
             }
             
+            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
         
-        // Helper methods
-        private List<Category> GetCategories()
+        private bool ProductExists(int id)
         {
-            return new List<Category>
-            {
-                new Category { CategoryId = 1, Name = "Men's Clothing", Description = "Clothing for men", Products = new List<Product>() },
-                new Category { CategoryId = 2, Name = "Women's Clothing", Description = "Clothing for women", Products = new List<Product>() },
-                new Category { CategoryId = 3, Name = "Accessories", Description = "Fashion accessories", Products = new List<Product>() }
-            };
-        }
-        
-        private Category GetDefaultCategory(int categoryId)
-        {
-            return new Category
-            {
-                CategoryId = categoryId,
-                Name = "Unknown Category",
-                Description = "Category not found",
-                Products = new List<Product>()
-            };
+            return _context.Products.Any(e => e.ProductId == id);
         }
     }
 }

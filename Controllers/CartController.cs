@@ -1,56 +1,100 @@
+using ClothingWebApp.Data;
 using ClothingWebApp.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace ClothingWebApp.Controllers 
 {
     public class CartController : Controller
     {
-        private static Dictionary<int, Cart> _carts = new Dictionary<int, Cart>();
-        private static List<Product> _products = new List<Product>();
+        private readonly ApplicationDbContext _context;
+
+        public CartController(ApplicationDbContext context)
+        {
+            _context = context;
+        }
 
         // GET: Cart
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
             int userId = GetCurrentUserId();
             
-            if (!_carts.ContainsKey(userId))
+            var cart = await _context.Carts
+                .Include(c => c.Products)
+                .Include(c => c.Customer)
+                .FirstOrDefaultAsync(c => c.CustomerId == userId);
+                
+            if (cart == null)
             {
-                _carts[userId] = new Cart
+                // Create a new cart for this user
+                var customer = await GetOrCreateCustomerAsync(userId);
+                if (customer != null)
                 {
-                    CartId = userId,
-                    CustomerId = userId,
-                    Customer = GetCustomer(userId),
-                    Products = new List<Product>()
-                };
+                    cart = new Cart
+                    {
+                        CartId = customer.CustomerId,
+                        CustomerId = customer.CustomerId,
+                        Customer = customer,
+                        Products = new List<Product>()
+                    };
+                    
+                    _context.Carts.Add(cart);
+                    await _context.SaveChangesAsync();
+                }
+                else
+                {
+                    // Handle case where customer creation failed
+                    return RedirectToAction("Login", "Account");
+                }
             }
             
-            return View(_carts[userId]);
+            return View(cart);
         }
 
         // POST: Cart/AddToCart
         [HttpPost]
-        public IActionResult AddToCart(int productId)
+        public async Task<IActionResult> AddToCart(int productId)
         {
             int userId = GetCurrentUserId();
             
-            
-            if (!_carts.ContainsKey(userId))
+            // Get the cart for this user
+            var cart = await _context.Carts
+                .Include(c => c.Products)
+                .FirstOrDefaultAsync(c => c.CustomerId == userId);
+                
+            if (cart == null)
             {
-                _carts[userId] = new Cart
+                // Create a new cart
+                var customer = await GetOrCreateCustomerAsync(userId);
+                if (customer != null)
                 {
-                    CartId = userId,
-                    CustomerId = userId,
-                    Customer = GetCustomer(userId),
-                    Products = new List<Product>()
-                };
+                    cart = new Cart
+                    {
+                        CartId = customer.CustomerId,
+                        CustomerId = customer.CustomerId,
+                        Customer = customer,
+                        Products = new List<Product>()
+                    };
+                    
+                    _context.Carts.Add(cart);
+                    await _context.SaveChangesAsync();
+                }
+                else
+                {
+                    // Handle case where customer creation failed
+                    return RedirectToAction("Login", "Account");
+                }
             }
             
-            var product = _products.FirstOrDefault(p => p.ProductId == productId);
+            // Get the product
+            var product = await _context.Products.FindAsync(productId);
             if (product != null)
             {
-                _carts[userId].Products.Add(product);
+                cart.Products.Add(product);
+                await _context.SaveChangesAsync();
             }
             
             return RedirectToAction(nameof(Index));
@@ -58,17 +102,21 @@ namespace ClothingWebApp.Controllers
 
         // POST: Cart/RemoveFromCart
         [HttpPost]
-        public IActionResult RemoveFromCart(int productId)
+        public async Task<IActionResult> RemoveFromCart(int productId)
         {
             int userId = GetCurrentUserId();
             
-            if (_carts.ContainsKey(userId))
+            var cart = await _context.Carts
+                .Include(c => c.Products)
+                .FirstOrDefaultAsync(c => c.CustomerId == userId);
+                
+            if (cart != null)
             {
-                var cart = _carts[userId];
-                var productToRemove = cart.Products.FirstOrDefault(p => p.ProductId == productId);
-                if (productToRemove != null)
+                var product = cart.Products.FirstOrDefault(p => p.ProductId == productId);
+                if (product != null)
                 {
-                    cart.Products.Remove(productToRemove);
+                    cart.Products.Remove(product);
+                    await _context.SaveChangesAsync();
                 }
             }
             
@@ -76,13 +124,18 @@ namespace ClothingWebApp.Controllers
         }
         
         // GET: Cart/Checkout
-        public IActionResult Checkout()
+        public async Task<IActionResult> Checkout()
         {
             int userId = GetCurrentUserId();
             
-            if (_carts.ContainsKey(userId) && _carts[userId].Products.Any())
+            var cart = await _context.Carts
+                .Include(c => c.Products)
+                .Include(c => c.Customer)
+                .FirstOrDefaultAsync(c => c.CustomerId == userId);
+                
+            if (cart != null && cart.Products.Any())
             {
-                return View(_carts[userId]);
+                return View(cart);
             }
             
             return RedirectToAction(nameof(Index));
@@ -90,30 +143,43 @@ namespace ClothingWebApp.Controllers
         
         // POST: Cart/PlaceOrder
         [HttpPost]
-        public IActionResult PlaceOrder()
+        public async Task<IActionResult> PlaceOrder()
         {
             int userId = GetCurrentUserId();
             
-            if (_carts.ContainsKey(userId) && _carts[userId].Products.Any())
+            var cart = await _context.Carts
+                .Include(c => c.Products)
+                .Include(c => c.Customer)
+                .FirstOrDefaultAsync(c => c.CustomerId == userId);
+                
+            if (cart != null && cart.Products.Any())
             {
                 // Calculate total amount
-                decimal total = _carts[userId].Products.Sum(p => p.Price);
+                decimal total = cart.Products.Sum(p => p.Price);
                 
-                // Create customer for the order
-                var customer = GetCustomer(userId);
+                // Get the next available OrderId
+                int nextOrderId = 1;
+                if (await _context.Orders.AnyAsync())
+                {
+                    nextOrderId = await _context.Orders.MaxAsync(o => o.OrderId) + 1;
+                }
                 
-                // Create an order
+                // Create an order with the OrderId set explicitly
                 var order = new Order
                 {
-                    OrderId = 1,
+                    OrderId = nextOrderId,
                     CustomerId = userId,
-                    Customer = customer,
+                    Customer = cart.Customer,
                     OrderDate = System.DateTime.Now,
                     TotalAmount = total
                 };
                 
+                _context.Orders.Add(order);
+                
                 // Clear the cart
-                _carts[userId].Products.Clear();
+                cart.Products.Clear();
+                
+                await _context.SaveChangesAsync();
                 
                 return RedirectToAction("OrderConfirmation", new { orderId = order.OrderId });
             }
@@ -131,22 +197,60 @@ namespace ClothingWebApp.Controllers
         // Helper methods
         private int GetCurrentUserId()
         {
-            // In a real app, this would come from authentication
-            return 1;
+            // If user is authenticated, get the user ID from claims
+            if (User.Identity != null && User.Identity.IsAuthenticated)
+            {
+                var userIdClaim = User.FindFirst("CustomerId");
+                if (userIdClaim != null && int.TryParse(userIdClaim.Value, out int id))
+                {
+                    return id;
+                }
+            }
+            
+            // For guest users or if authentication fails, use a default ID
+            return 999; // Guest user ID
         }
         
-        private Customer GetCustomer(int userId)
+        // Helper method to get or create a customer
+        private async Task<Customer?> GetOrCreateCustomerAsync(int userId)
         {
-            // In a real app, this would fetch the customer from a database
-            return new Customer
+            var customer = await _context.Customers.FindAsync(userId);
+            
+            if (customer != null)
             {
-                CustomerId = userId,
-                FirstName = "John",
-                LastName = "Doe",
-                Email = "john@example.com",
-                Address = "123 Main St",
-                Password = "password123"
-            };
+                return customer;
+            }
+            
+            if (userId == 999) // Guest user
+            {
+                try
+                {
+                    // Create a new customer with auto-generated ID
+                    customer = new Customer
+                    {
+                        // Don't set CustomerId - let the database generate it
+                        FirstName = "Guest",
+                        LastName = "User",
+                        Email = $"guest{DateTime.Now.Ticks}@example.com", // Make it unique
+                        Address = "Guest Address",
+                        Password = "guest" + Guid.NewGuid().ToString().Substring(0, 8) // Random password
+                    };
+                    
+                    _context.Customers.Add(customer);
+                    await _context.SaveChangesAsync();
+                    
+                    // Get the customer with the generated ID
+                    return customer;
+                }
+                catch (Exception ex)
+                {
+                    // Log the error
+                    Console.WriteLine($"Error creating guest customer: {ex.Message}");
+                    return null;
+                }
+            }
+            
+            return null;
         }
     }
 }

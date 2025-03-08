@@ -1,29 +1,31 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\popes\\ClothingWebApp\\ClothingWebApp.csproj": {}
+    "C:\\Users\\popes\\Desktop\\ClothingWebApp\\ClothingWebApp.csproj": {}
   },
   "projects": {
-    "C:\\Users\\popes\\ClothingWebApp\\ClothingWebApp.csproj": {
+    "C:\\Users\\popes\\Desktop\\ClothingWebApp\\ClothingWebApp.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\popes\\ClothingWebApp\\ClothingWebApp.csproj",
+        "projectUniqueName": "C:\\Users\\popes\\Desktop\\ClothingWebApp\\ClothingWebApp.csproj",
         "projectName": "ClothingWebApp",
-        "projectPath": "C:\\Users\\popes\\ClothingWebApp\\ClothingWebApp.csproj",
+        "projectPath": "C:\\Users\\popes\\Desktop\\ClothingWebApp\\ClothingWebApp.csproj",
         "packagesPath": "C:\\Users\\popes\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\popes\\ClothingWebApp\\obj\\",
+        "outputPath": "C:\\Users\\popes\\Desktop\\ClothingWebApp\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
           "C:\\Users\\popes\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config"
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "net9.0"
         ],
         "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -48,6 +50,12 @@
         "net9.0": {
           "targetAlias": "net9.0",
           "dependencies": {
+            "Microsoft.EntityFrameworkCore.Design": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[9.0.2, )"
+            },
             "Microsoft.EntityFrameworkCore.SqlServer": {
               "target": "Package",
               "version": "[9.0.2, )"
@@ -55,6 +63,10 @@
             "Microsoft.EntityFrameworkCore.Tools": {
               "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
               "suppressParent": "All",
+              "target": "Package",
+              "version": "[9.0.2, )"
+            },
+            "Microsoft.Extensions.Configuration.Json": {
               "target": "Package",
               "version": "[9.0.2, )"
             }

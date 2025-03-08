@@ -6,15 +6,36 @@
 
 <div class="row mt-4">
     <div class="col-md-5">
-        @if (!string.IsNullOrEmpty(Model.ImageUrl))
-        {
-            <img src="@Model.ImageUrl" class="img-fluid" alt="@Model.Name">
-        }
-        else
-        {
-            <div class="bg-light text-center p-5">No Image</div>
-        }
+        <!-- Simple image gallery -->
+        <div id="productImageCarousel" class="carousel slide" data-bs-ride="carousel">
+            <div class="carousel-inner">
+                <div class="carousel-item active">
+                    <img src="@Model.ImageUrl" class="img-fluid" alt="@Model.Name">
+                </div>
+                
+                @{
+                    // Try to derive the second image path from the first
+                    string secondImagePath = Model.ImageUrl.Replace("_img_0", "_img_1");
+                    
+                    <div class="carousel-item">
+                        <img src="@secondImagePath" class="img-fluid" alt="@Model.Name - View 2" 
+                             onerror="this.style.display='none'; document.querySelector('.carousel-control-prev').style.display='none'; document.querySelector('.carousel-control-next').style.display='none';">
+                    </div>
+                }
+            </div>
+            
+            <!-- Add carousel controls -->
+            <button class="carousel-control-prev" type="button" data-bs-target="#productImageCarousel" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#productImageCarousel" data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Next</span>
+            </button>
+        </div>
     </div>
+    
     <div class="col-md-7">
         <h1>@Model.Name</h1>
         <h4 class="text-muted">@Model.Price.ToString("C")</h4>

@@ -1,168 +1,217 @@
+using ClothingWebApp.Data;
 using ClothingWebApp.Models;
 using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;
-using System.Linq;
+using Microsoft.EntityFrameworkCore;
 
 namespace ClothingWebApp.Controllers
 {
     public class CategoryController : Controller
     {
-        private static List<Category> _categories = new List<Category>
+        private readonly ApplicationDbContext _context;
+        private readonly ILogger<CategoryController> _logger;
+
+        public CategoryController(ApplicationDbContext context, ILogger<CategoryController> logger)
         {
-            new Category { CategoryId = 1, Name = "Bags", Description = "Stylish bags for all occasions", Products = new List<Product>() },
-            new Category { CategoryId = 2, Name = "Blazers", Description = "Elegant blazers for professional look", Products = new List<Product>() },
-            new Category { CategoryId = 3, Name = "Dresses/Jumpsuits", Description = "Beautiful dresses and jumpsuits", Products = new List<Product>() },
-            new Category { CategoryId = 4, Name = "Jackets", Description = "Trendy jackets for all seasons", Products = new List<Product>() },
-            new Category { CategoryId = 5, Name = "Jeans", Description = "Comfortable and stylish jeans", Products = new List<Product>() }
-        };
-        
-        private static int _nextCategoryId = 6;
-        
-        // CUSTOMER-FACING ACTIONS
-        
+            _context = context;
+            _logger = logger;
+        }
+
         // GET: Category
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            return View(_categories);
+            var categories = await _context.Categories.ToListAsync();
+            _logger.LogInformation($"Found {categories.Count} categories");
+            
+            // Get product counts for each category
+            var categoriesWithCounts = new List<dynamic>();
+            foreach (var category in categories)
+            {
+                var count = await _context.Products.CountAsync(p => p.CategoryId == category.CategoryId);
+                categoriesWithCounts.Add(new { Category = category, ProductCount = count });
+            }
+            
+            ViewBag.CategoriesWithCounts = categoriesWithCounts;
+            return View(categories);
         }
-        
-        // GET: Category/Bags
-        public IActionResult Bags()
-        {
-            var category = _categories.FirstOrDefault(c => c.Name == "Bags");
-            return View("CategoryPage", category);
-        }
-        
-        // GET: Category/Blazers
-        public IActionResult Blazers()
-        {
-            var category = _categories.FirstOrDefault(c => c.Name == "Blazers");
-            return View("CategoryPage", category);
-        }
-        
-        // GET: Category/Dresses
-        public IActionResult Dresses()
-        {
-            var category = _categories.FirstOrDefault(c => c.Name == "Dresses/Jumpsuits");
-            return View("CategoryPage", category);
-        }
-        
-        // GET: Category/Jackets
-        public IActionResult Jackets()
-        {
-            var category = _categories.FirstOrDefault(c => c.Name == "Jackets");
-            return View("CategoryPage", category);
-        }
-        
-        // GET: Category/Jeans
-        public IActionResult Jeans()
-        {
-            var category = _categories.FirstOrDefault(c => c.Name == "Jeans");
-            return View("CategoryPage", category);
-        }
-        
-        // ADMIN/BACKEND CRUD OPERATIONS
-        
-        // GET: Category/Admin
-        public IActionResult Admin()
-        {
-            return View(_categories);
-        }
-        
+
         // GET: Category/Details/5
-        public IActionResult Details(int id)
+        public async Task<IActionResult> Details(int id)
         {
-            var category = _categories.FirstOrDefault(c => c.CategoryId == id);
+            _logger.LogInformation($"Looking for category with ID: {id}");
+            var category = await _context.Categories.FindAsync(id);
             if (category == null)
             {
+                _logger.LogWarning($"Category with ID {id} not found");
                 return NotFound();
             }
+
+            _logger.LogInformation($"Found category: {category.Name}");
             
-            return View(category);
-        }
-        
-        // GET: Category/Create
-        public IActionResult Create()
-        {
-            return View();
-        }
-        
-        // POST: Category/Create
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult Create(Category category)
-        {
-            if (ModelState.IsValid)
-            {
-                category.CategoryId = _nextCategoryId++;
-                category.Products = new List<Product>();
-                _categories.Add(category);
-                return RedirectToAction(nameof(Admin));
-            }
-            return View(category);
-        }
-        
-        // GET: Category/Edit/5
-        public IActionResult Edit(int id)
-        {
-            var category = _categories.FirstOrDefault(c => c.CategoryId == id);
-            if (category == null)
-            {
-                return NotFound();
-            }
+            // Check total product count
+            var totalProductCount = await _context.Products.CountAsync();
+            _logger.LogInformation($"Total products in database: {totalProductCount}");
             
-            return View(category);
-        }
-        
-        // POST: Category/Edit/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult Edit(int id, Category category)
-        {
-            if (id != category.CategoryId)
-            {
-                return NotFound();
-            }
+            var products = await _context.Products
+                .Where(p => p.CategoryId == id)
+                .ToListAsync();
+
+            _logger.LogInformation($"Found {products.Count} products in category {category.Name}");
             
-            if (ModelState.IsValid)
+            if (products.Count == 0)
             {
-                var existingCategory = _categories.FirstOrDefault(c => c.CategoryId == id);
-                if (existingCategory != null)
-                {
-                    existingCategory.Name = category.Name;
-                    existingCategory.Description = category.Description;
-                    // Keep the existing Products reference
-                }
+                _logger.LogWarning($"No products found for category {category.Name} (ID: {id})");
                 
-                return RedirectToAction(nameof(Admin));
+                // Log some sample products for diagnostics
+                var sampleProducts = await _context.Products.Take(5).ToListAsync();
+                foreach (var prod in sampleProducts)
+                {
+                    _logger.LogInformation($"Sample product: ID={prod.ProductId}, Name={prod.Name}, CategoryID={prod.CategoryId}");
+                }
             }
+            
+            ViewBag.Products = products;
             return View(category);
         }
-        
-        // GET: Category/Delete/5
-        public IActionResult Delete(int id)
+
+        // These action methods will handle specific category links
+        public async Task<IActionResult> Bags()
         {
-            var category = _categories.FirstOrDefault(c => c.CategoryId == id);
+            _logger.LogInformation("Accessing Bags category");
+            return await GetCategoryByName("BAGS");
+        }
+
+        public async Task<IActionResult> Blazers()
+        {
+            _logger.LogInformation("Accessing Blazers category");
+            return await GetCategoryByName("BLAZERS");
+        }
+
+        public async Task<IActionResult> Dresses()
+        {
+            _logger.LogInformation("Accessing Dresses category");
+            return await GetCategoryByName("DRESSES/JUMPSUITS");
+        }
+
+        public async Task<IActionResult> Jackets()
+        {
+            _logger.LogInformation("Accessing Jackets category");
+            return await GetCategoryByName("JACKETS");
+        }
+
+        public async Task<IActionResult> Shirts()
+        {
+            _logger.LogInformation("Accessing Shirts category");
+            return await GetCategoryByName("SHIRTS");
+        }
+        
+        public async Task<IActionResult> Shoes()
+        {
+            _logger.LogInformation("Accessing Shoes category");
+            return await GetCategoryByName("SHOES");
+        }
+        
+        public async Task<IActionResult> Sweaters()
+        {
+            _logger.LogInformation("Accessing Sweaters category");
+            return await GetCategoryByName("SWEATERS");
+        }
+        
+        public async Task<IActionResult> Skirts()
+        {
+            _logger.LogInformation("Accessing Skirts category");
+            return await GetCategoryByName("SKIRTS");
+        }
+
+        // Helper method to get category by name
+        private async Task<IActionResult> GetCategoryByName(string categoryName)
+        {
+            _logger.LogInformation($"Looking for category with name: {categoryName}");
+            
+            // Check if database has any categories
+            var totalCategories = await _context.Categories.CountAsync();
+            _logger.LogInformation($"Total categories in database: {totalCategories}");
+            
+            var allCategoryNames = await _context.Categories.Select(c => c.Name).ToListAsync();
+            _logger.LogInformation($"All category names: {string.Join(", ", allCategoryNames)}");
+            
+            var category = await _context.Categories
+                .FirstOrDefaultAsync(c => c.Name == categoryName);
+
             if (category == null)
             {
-                return NotFound();
+                _logger.LogWarning($"Category with name '{categoryName}' not found");
+                
+                // Try with case-insensitive search
+                category = await _context.Categories
+                    .FirstOrDefaultAsync(c => EF.Functions.Like(c.Name.ToUpper(), categoryName.ToUpper()));
+                    
+                if (category == null)
+                {
+                    _logger.LogWarning($"Category with name '{categoryName}' not found even with case-insensitive search");
+                    return NotFound();
+                }
+            }
+
+            _logger.LogInformation($"Found category: {category.Name} (ID: {category.CategoryId})");
+            
+            // Check total product count
+            var totalProductCount = await _context.Products.CountAsync();
+            _logger.LogInformation($"Total products in database: {totalProductCount}");
+            
+            var products = await _context.Products
+                .Where(p => p.CategoryId == category.CategoryId)
+                .ToListAsync();
+
+            _logger.LogInformation($"Found {products.Count} products in category {category.Name}");
+            
+            if (products.Count == 0)
+            {
+                _logger.LogWarning($"No products found for category {category.Name} (ID: {category.CategoryId})");
+                
+                // Log some sample products for diagnostics
+                var sampleProducts = await _context.Products.Take(5).ToListAsync();
+                foreach (var prod in sampleProducts)
+                {
+                    _logger.LogInformation($"Sample product: ID={prod.ProductId}, Name={prod.Name}, CategoryID={prod.CategoryId}");
+                }
             }
             
-            return View(category);
+            ViewBag.Products = products;
+            return View("Details", category);
         }
         
-        // POST: Category/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public IActionResult DeleteConfirmed(int id)
+        // Diagnostic endpoint to check database status
+        public async Task<IActionResult> CheckDatabase()
         {
-            var category = _categories.FirstOrDefault(c => c.CategoryId == id);
-            if (category != null)
+            var result = new Dictionary<string, object>();
+            
+            // Check categories
+            var categories = await _context.Categories.ToListAsync();
+            result.Add("CategoryCount", categories.Count);
+            result.Add("Categories", categories.Select(c => new { c.CategoryId, c.Name }).ToList());
+            
+            // Check products
+            var productCount = await _context.Products.CountAsync();
+            result.Add("ProductCount", productCount);
+            
+            if (productCount > 0)
             {
-                _categories.Remove(category);
+                var products = await _context.Products.Take(10).ToListAsync();
+                result.Add("SampleProducts", products.Select(p => new { 
+                    p.ProductId, p.Name, p.CategoryId, p.Price, p.Color 
+                }).ToList());
+                
+                // Check products per category
+                var productsByCategory = new Dictionary<string, int>();
+                foreach (var cat in categories)
+                {
+                    var count = await _context.Products.CountAsync(p => p.CategoryId == cat.CategoryId);
+                    productsByCategory.Add(cat.Name, count);
+                }
+                result.Add("ProductsByCategory", productsByCategory);
             }
             
-            return RedirectToAction(nameof(Admin));
+            return Json(result);
         }
     }
 }
