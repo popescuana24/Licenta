@@ -4,71 +4,125 @@
     ViewData["Title"] = "Shopping Cart";
 }
 
-<h1>Shopping Cart</h1>
+<div class="container mt-4">
+    <h1>Shopping Cart</h1>
 
-@if (Model != null && Model.Products != null && Model.Products.Any())
-{
-    <div class="table-responsive">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Product</th>
-                    <th>Price</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <!-- In the tbody section of the table -->
-<tbody>
-    @foreach (var item in Model.Products)
+    @if (TempData["ErrorMessage"] != null)
     {
-        <tr>
-            <td>
-                <div class="d-flex align-items-center">
-                    @if (!string.IsNullOrEmpty(item.ImageUrl))
-                    {
-                        <img src="@item.ImageUrl" alt="@item.Name" style="width: 50px; height: 50px; object-fit: cover;" class="me-3">
-                    }
-                    <div>
-                        <strong>@item.Name</strong>
-                        <br/>
-                        <small class="text-muted">
-                            @item.Color
-                            @if (!string.IsNullOrEmpty(item.Size))
-                            {
-                                <span> - Size: @item.Size</span>
-                            }
-                        </small>
-                    </div>
-                </div>
-            </td>
-            <td>@item.Price.ToString("C")</td>
-            <td>
-                <form asp-action="RemoveFromCart" method="post">
-                    <input type="hidden" name="productId" value="@item.ProductId" />
-                    <button type="submit" class="btn btn-sm btn-danger">Remove</button>
-                </form>
-            </td>
-        </tr>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
     }
-</tbody>
-            <tfoot>
-                <tr>
-                    <th>Total</th>
-                    <th>@Model.Products.Sum(p => p.Price).ToString("C")</th>
-                    <th></th>
-                </tr>
-            </tfoot>
-        </table>
-    </div>
-    
-    <div class="mt-4">
-        <a asp-action="Checkout" class="btn btn-success">Checkout</a>
-        <a asp-controller="Home" asp-action="Index" class="btn btn-secondary">Continue Shopping</a>
-    </div>
-}
-else
-{
-    <div class="alert alert-info">
-        Your cart is empty. <a asp-controller="Home" asp-action="Index">Continue shopping</a>.
-    </div>
-}
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (Model != null && Model.Products != null && Model.Products.Any())
+    {
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Size</th>
+                        <th>Price</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Products)
+                    {
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    @if (!string.IsNullOrEmpty(item.ImageUrl))
+                                    {
+                                        <img src="@item.ImageUrl" alt="@item.Name" style="width: 50px; height: 50px; object-fit: cover;" class="me-3">
+                                    }
+                                    <div>
+                                        <strong>@item.Name</strong>
+                                        <br/>
+                                        <small class="text-muted">@item.Color</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                @if (item.Category?.Name?.ToUpper().Contains("BAG") == true)
+                                {
+                                    <span>One Size</span>
+                                }
+                                else
+                                {
+                                    <form asp-action="UpdateSize" method="post" class="d-flex align-items-center">
+                                        <input type="hidden" name="productId" value="@item.ProductId" />
+                                        <select name="newSize" class="form-select form-select-sm" onchange="this.form.submit()">
+                                            @if (item.Category?.Name?.ToUpper() == "SHOES")
+                                            {
+                                                @foreach (var size in new[] { "36", "37", "38", "39", "40", "41" })
+                                                {
+                                                    if (item.Size == size)
+                                                    {
+                                                        <option value="@size" selected>@size</option>
+                                                    }
+                                                    else
+                                                    {
+                                                        <option value="@size">@size</option>
+                                                    }
+                                                }
+                                            }
+                                            else
+                                            {
+                                                @foreach (var size in new[] { "XS", "S", "M", "L", "XL" })
+                                                {
+                                                    if (item.Size == size)
+                                                    {
+                                                        <option value="@size" selected>@size</option>
+                                                    }
+                                                    else
+                                                    {
+                                                        <option value="@size">@size</option>
+                                                    }
+                                                }
+                                            }
+                                        </select>
+                                    </form>
+                                }
+                            </td>
+                            <td>@item.Price.ToString("C")</td>
+                            <td>
+                                <form asp-action="RemoveFromCart" method="post">
+                                    <input type="hidden" name="productId" value="@item.ProductId" />
+                                    <button type="submit" class="btn btn-sm btn-danger">Remove</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th colspan="2">Total</th>
+                        <th>@Model.Products.Sum(p => p.Price).ToString("C")</th>
+                        <th></th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        
+        <div class="mt-4">
+            <a asp-action="Checkout" class="btn btn-success">Proceed to Checkout</a>
+            <a asp-controller="Home" asp-action="Index" class="btn btn-secondary">Continue Shopping</a>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">
+            Your cart is empty. <a asp-controller="Home" asp-action="Index">Continue shopping</a>.
+        </div>
+    }
+</div>

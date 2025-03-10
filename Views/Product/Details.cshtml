@@ -51,11 +51,44 @@
         
         <p>@Model.Description</p>
         
-        <div class="mt-4">
-            <form asp-controller="Cart" asp-action="AddToCart" method="post">
-                <input type="hidden" name="productId" value="@Model.ProductId" />
-                <button type="submit" class="btn btn-success">Add to Cart</button>
-            </form>
-        </div>
+        <form asp-controller="Cart" asp-action="AddToCart" method="post">
+            <input type="hidden" name="productId" value="@Model.ProductId" />
+            
+            <!-- Size selection -->
+            @if (Model.Category?.Name?.ToUpper().Contains("BAG") != true)
+            {
+                <div class="mb-4">
+                    <label class="form-label">Select Size:</label>
+                    
+                    @if (Model.Category?.Name?.ToUpper() == "SHOES")
+                    {
+                        <div class="btn-group" role="group" aria-label="Shoe sizes">
+                            @foreach (var size in new[] { "36", "37", "38", "39", "40", "41" })
+                            {
+                                <input type="radio" class="btn-check" name="selectedSize" id="size-@size" value="@size" autocomplete="off" required>
+                                <label class="btn btn-outline-secondary" for="size-@size">@size</label>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="btn-group" role="group" aria-label="Clothing sizes">
+                            @foreach (var size in new[] { "XS", "S", "M", "L", "XL" })
+                            {
+                                <input type="radio" class="btn-check" name="selectedSize" id="size-@size" value="@size" autocomplete="off" required>
+                                <label class="btn btn-outline-secondary" for="size-@size">@size</label>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <!-- For bags, add a hidden input with default value -->
+                <input type="hidden" name="selectedSize" value="One Size">
+            }
+            
+            <button type="submit" class="btn btn-success">Add to Cart</button>
+        </form>
     </div>
 </div>

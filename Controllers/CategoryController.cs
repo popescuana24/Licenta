@@ -73,112 +73,70 @@ namespace ClothingWebApp.Controllers
             return View(category);
         }
 
-        // These action methods will handle specific category links
-        public async Task<IActionResult> Bags()
-        {
-            _logger.LogInformation("Accessing Bags category");
-            return await GetCategoryByName("BAGS");
-        }
+        // Add these methods to your CategoryController
+public async Task<IActionResult> Bags()
+{
+    return await GetCategoryByName("BAGS");
+}
 
-        public async Task<IActionResult> Blazers()
-        {
-            _logger.LogInformation("Accessing Blazers category");
-            return await GetCategoryByName("BLAZERS");
-        }
+public async Task<IActionResult> Blazers()
+{
+    return await GetCategoryByName("BLAZERS");
+}
 
-        public async Task<IActionResult> Dresses()
-        {
-            _logger.LogInformation("Accessing Dresses category");
-            return await GetCategoryByName("DRESSES/JUMPSUITS");
-        }
+public async Task<IActionResult> Dresses()
+{
+    return await GetCategoryByName("DRESSES/JUMPSUITS");
+}
 
-        public async Task<IActionResult> Jackets()
-        {
-            _logger.LogInformation("Accessing Jackets category");
-            return await GetCategoryByName("JACKETS");
-        }
+public async Task<IActionResult> Jackets()
+{
+    return await GetCategoryByName("JACKETS");
+}
 
-        public async Task<IActionResult> Shirts()
-        {
-            _logger.LogInformation("Accessing Shirts category");
-            return await GetCategoryByName("SHIRTS");
-        }
+public async Task<IActionResult> Shirts()
+{
+    return await GetCategoryByName("SHIRTS");
+}
+
+public async Task<IActionResult> Shoes()
+{
+    return await GetCategoryByName("SHOES");
+}
+
+public async Task<IActionResult> Sweaters()
+{
+    return await GetCategoryByName("SWEATERS");
+}
+
+public async Task<IActionResult> Skirts()
+{
+    return await GetCategoryByName("SKIRTS");
+}
+
+public async Task<IActionResult> Tops()
+{
+    return await GetCategoryByName("T-SHIRT/TOPS");
+}
+
+// Helper method to get category by name
+private async Task<IActionResult> GetCategoryByName(string categoryName)
+{
+    var category = await _context.Categories
+        .FirstOrDefaultAsync(c => c.Name == categoryName);
         
-        public async Task<IActionResult> Shoes()
-        {
-            _logger.LogInformation("Accessing Shoes category");
-            return await GetCategoryByName("SHOES");
-        }
+    if (category == null)
+    {
+        return NotFound();
+    }
+    
+    var products = await _context.Products
+        .Where(p => p.CategoryId == category.CategoryId)
+        .ToListAsync();
         
-        public async Task<IActionResult> Sweaters()
-        {
-            _logger.LogInformation("Accessing Sweaters category");
-            return await GetCategoryByName("SWEATERS");
-        }
-        
-        public async Task<IActionResult> Skirts()
-        {
-            _logger.LogInformation("Accessing Skirts category");
-            return await GetCategoryByName("SKIRTS");
-        }
-
-        // Helper method to get category by name
-        private async Task<IActionResult> GetCategoryByName(string categoryName)
-        {
-            _logger.LogInformation($"Looking for category with name: {categoryName}");
-            
-            // Check if database has any categories
-            var totalCategories = await _context.Categories.CountAsync();
-            _logger.LogInformation($"Total categories in database: {totalCategories}");
-            
-            var allCategoryNames = await _context.Categories.Select(c => c.Name).ToListAsync();
-            _logger.LogInformation($"All category names: {string.Join(", ", allCategoryNames)}");
-            
-            var category = await _context.Categories
-                .FirstOrDefaultAsync(c => c.Name == categoryName);
-
-            if (category == null)
-            {
-                _logger.LogWarning($"Category with name '{categoryName}' not found");
-                
-                // Try with case-insensitive search
-                category = await _context.Categories
-                    .FirstOrDefaultAsync(c => EF.Functions.Like(c.Name.ToUpper(), categoryName.ToUpper()));
-                    
-                if (category == null)
-                {
-                    _logger.LogWarning($"Category with name '{categoryName}' not found even with case-insensitive search");
-                    return NotFound();
-                }
-            }
-
-            _logger.LogInformation($"Found category: {category.Name} (ID: {category.CategoryId})");
-            
-            // Check total product count
-            var totalProductCount = await _context.Products.CountAsync();
-            _logger.LogInformation($"Total products in database: {totalProductCount}");
-            
-            var products = await _context.Products
-                .Where(p => p.CategoryId == category.CategoryId)
-                .ToListAsync();
-
-            _logger.LogInformation($"Found {products.Count} products in category {category.Name}");
-            
-            if (products.Count == 0)
-            {
-                _logger.LogWarning($"No products found for category {category.Name} (ID: {category.CategoryId})");
-                
-                // Log some sample products for diagnostics
-                var sampleProducts = await _context.Products.Take(5).ToListAsync();
-                foreach (var prod in sampleProducts)
-                {
-                    _logger.LogInformation($"Sample product: ID={prod.ProductId}, Name={prod.Name}, CategoryID={prod.CategoryId}");
-                }
-            }
-            
-            ViewBag.Products = products;
-            return View("Details", category);
-        }
+    ViewBag.Products = products;
+    return View("Details", category);
+}
         
         // Diagnostic endpoint to check database status
         public async Task<IActionResult> CheckDatabase()

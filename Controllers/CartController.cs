@@ -2,6 +2,7 @@ using ClothingWebApp.Data;
 using ClothingWebApp.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -20,60 +21,118 @@ namespace ClothingWebApp.Controllers
         // GET: Cart
         public async Task<IActionResult> Index()
         {
-            int userId = GetCurrentUserId();
-            
-            var cart = await _context.Carts
-                .Include(c => c.Products)
-                .Include(c => c.Customer)
-                .FirstOrDefaultAsync(c => c.CustomerId == userId);
-                
-            if (cart == null)
+            try
             {
-                // Create a new cart for this user
-                var customer = await GetOrCreateCustomerAsync(userId);
-                if (customer != null)
+                // Clear any size-related error messages when viewing the cart
+                if (TempData.ContainsKey("ErrorMessage") && 
+                    TempData["ErrorMessage"].ToString().Contains("size"))
                 {
-                    cart = new Cart
-                    {
-                        CartId = customer.CustomerId,
-                        CustomerId = customer.CustomerId,
-                        Customer = customer,
-                        Products = new List<Product>()
-                    };
+                    TempData.Remove("ErrorMessage");
+                }
+                
+                int userId = GetCurrentUserId();
+                
+                // Try to get the cart with products
+                var cart = await _context.Carts
+                    .Include(c => c.Products)
+                        .ThenInclude(p => p.Category)
+                    .Include(c => c.Customer)
+                    .FirstOrDefaultAsync(c => c.CustomerId == userId);
                     
-                    _context.Carts.Add(cart);
-                    await _context.SaveChangesAsync();
-                }
-                else
+                if (cart == null)
                 {
-                    // Handle case where customer creation failed
-                    return RedirectToAction("Login", "Account");
+                    // Create a new cart
+                    var customer = await GetOrCreateCustomerAsync(userId);
+                    if (customer != null)
+                    {
+                        cart = new Cart
+                        {
+                            CustomerId = customer.CustomerId,
+                            Customer = customer,
+                            Products = new List<Product>()
+                        };
+                        
+                        _context.Carts.Add(cart);
+                        await _context.SaveChangesAsync();
+                    }
                 }
+                
+                // Update cart count cookie
+                if (cart != null)
+                {
+                    int cartCount = cart.Products.Count;
+                    Response.Cookies.Append("CartCount", cartCount.ToString());
+                }
+                
+                return View(cart);
             }
-            
-            return View(cart);
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = "Error retrieving cart: " + ex.Message;
+                return RedirectToAction("Index", "Home");
+            }
         }
 
         // POST: Cart/AddToCart
         [HttpPost]
-        public async Task<IActionResult> AddToCart(int productId)
+        public async Task<IActionResult> AddToCart(int productId, string selectedSize = "")
         {
-            int userId = GetCurrentUserId();
-            
-            // Get the cart for this user
-            var cart = await _context.Carts
-                .Include(c => c.Products)
-                .FirstOrDefaultAsync(c => c.CustomerId == userId);
-                
-            if (cart == null)
+            try
             {
-                // Create a new cart
-                var customer = await GetOrCreateCustomerAsync(userId);
-                if (customer != null)
+                // Clear any previous messages
+                TempData.Remove("ErrorMessage");
+                TempData.Remove("SuccessMessage");
+                
+                int userId = GetCurrentUserId();
+                
+                // Get the product
+                var product = await _context.Products
+                    .Include(p => p.Category)
+                    .FirstOrDefaultAsync(p => p.ProductId == productId);
+                    
+                if (product == null)
                 {
+                    TempData["ErrorMessage"] = "Product not found";
+                    return RedirectToAction("Index", "Home");
+                }
+                
+                // For products that require sizes (non-bag items), ensure size is selected
+                if (product.Category != null && 
+                    !product.Category.Name.ToUpper().Contains("BAG") && 
+                    string.IsNullOrEmpty(selectedSize))
+                {
+                    TempData["ErrorMessage"] = "Please select a size for this product";
+                    return RedirectToAction("Details", "Product", new { id = productId });
+                }
+                
+                // If size is provided, update the product's size
+                if (!string.IsNullOrEmpty(selectedSize))
+                {
+                    product.Size = selectedSize;
+                }
+                else if (product.Category != null && product.Category.Name.ToUpper().Contains("BAG"))
+                {
+                    // For bags, set default size
+                    product.Size = "One Size";
+                }
+                
+                // Get or create the cart
+                var cart = await _context.Carts
+                    .Include(c => c.Products)
+                    .FirstOrDefaultAsync(c => c.CustomerId == userId);
+                    
+                if (cart == null)
+                {
+                    // Create a new cart
+                    var customer = await GetOrCreateCustomerAsync(userId);
+                    if (customer == null)
+                    {
+                        TempData["ErrorMessage"] = "Error creating user account";
+                        return RedirectToAction("Login", "Account");
+                    }
+                    
                     cart = new Cart
                     {
-                        CartId = customer.CustomerId,
                         CustomerId = customer.CustomerId,
                         Customer = customer,
                         Products = new List<Product>()
@@ -82,51 +141,119 @@ namespace ClothingWebApp.Controllers
                     _context.Carts.Add(cart);
                     await _context.SaveChangesAsync();
                 }
-                else
-                {
-                    // Handle case where customer creation failed
-                    return RedirectToAction("Login", "Account");
-                }
-            }
-            
-            // Get the product
-            var product = await _context.Products.FindAsync(productId);
-            if (product != null)
-            {
+                
+                // Add the product to the cart
                 cart.Products.Add(product);
                 await _context.SaveChangesAsync();
+                
+                // Update cart count in cookie
+                int cartCount = cart.Products.Count;
+                Response.Cookies.Append("CartCount", cartCount.ToString());
+                
+                TempData["SuccessMessage"] = "Product added to cart!";
+                return RedirectToAction(nameof(Index));
             }
-            
-            return RedirectToAction(nameof(Index));
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = "Error adding to cart: " + ex.Message;
+                return RedirectToAction("Index", "Home");
+            }
+        }
+
+        // POST: Cart/UpdateSize
+        [HttpPost]
+        public async Task<IActionResult> UpdateSize(int productId, string newSize)
+        {
+            try
+            {
+                // Clear previous messages
+                TempData.Remove("ErrorMessage");
+                TempData.Remove("SuccessMessage");
+                
+                int userId = GetCurrentUserId();
+                
+                var cart = await _context.Carts
+                    .Include(c => c.Products)
+                    .FirstOrDefaultAsync(c => c.CustomerId == userId);
+                    
+                if (cart != null)
+                {
+                    var product = cart.Products.FirstOrDefault(p => p.ProductId == productId);
+                    if (product != null)
+                    {
+                        // Update the size
+                        product.Size = newSize;
+                        await _context.SaveChangesAsync();
+                        TempData["SuccessMessage"] = "Size updated successfully!";
+                    }
+                }
+                
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = "Error updating size: " + ex.Message;
+                return RedirectToAction(nameof(Index));
+            }
         }
 
         // POST: Cart/RemoveFromCart
         [HttpPost]
         public async Task<IActionResult> RemoveFromCart(int productId)
         {
-            int userId = GetCurrentUserId();
-            
-            var cart = await _context.Carts
-                .Include(c => c.Products)
-                .FirstOrDefaultAsync(c => c.CustomerId == userId);
-                
-            if (cart != null)
+            try
             {
-                var product = cart.Products.FirstOrDefault(p => p.ProductId == productId);
-                if (product != null)
+                // Clear previous messages
+                TempData.Remove("ErrorMessage");
+                TempData.Remove("SuccessMessage");
+                
+                int userId = GetCurrentUserId();
+                
+                var cart = await _context.Carts
+                    .Include(c => c.Products)
+                    .FirstOrDefaultAsync(c => c.CustomerId == userId);
+                    
+                if (cart != null)
                 {
-                    cart.Products.Remove(product);
-                    await _context.SaveChangesAsync();
+                    var product = cart.Products.FirstOrDefault(p => p.ProductId == productId);
+                    if (product != null)
+                    {
+                        cart.Products.Remove(product);
+                        await _context.SaveChangesAsync();
+                        
+                        // Update cart count cookie
+                        int cartCount = cart.Products.Count;
+                        Response.Cookies.Append("CartCount", cartCount.ToString());
+                        
+                        TempData["SuccessMessage"] = "Product removed from cart";
+                    }
                 }
+                
+                return RedirectToAction(nameof(Index));
             }
-            
-            return RedirectToAction(nameof(Index));
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = "Error removing product: " + ex.Message;
+                return RedirectToAction(nameof(Index));
+            }
         }
         
         // GET: Cart/Checkout
+        [HttpGet]
         public async Task<IActionResult> Checkout()
         {
+            // Clear previous messages
+            TempData.Remove("ErrorMessage");
+            TempData.Remove("SuccessMessage");
+            
             int userId = GetCurrentUserId();
+            
+            // If user is not logged in, redirect to login
+            if (!User.Identity.IsAuthenticated)
+            {
+                TempData["InfoMessage"] = "Please log in or register to complete your purchase.";
+                return RedirectToAction("Login", "Account", new { returnUrl = Url.Action("Checkout", "Cart") });
+            }
             
             var cart = await _context.Carts
                 .Include(c => c.Products)
@@ -145,6 +272,10 @@ namespace ClothingWebApp.Controllers
         [HttpPost]
         public async Task<IActionResult> PlaceOrder()
         {
+            // Clear previous messages
+            TempData.Remove("ErrorMessage");
+            TempData.Remove("SuccessMessage");
+            
             int userId = GetCurrentUserId();
             
             var cart = await _context.Carts
@@ -170,7 +301,7 @@ namespace ClothingWebApp.Controllers
                     OrderId = nextOrderId,
                     CustomerId = userId,
                     Customer = cart.Customer,
-                    OrderDate = System.DateTime.Now,
+                    OrderDate = DateTime.Now,
                     TotalAmount = total
                 };
                 
@@ -180,6 +311,9 @@ namespace ClothingWebApp.Controllers
                 cart.Products.Clear();
                 
                 await _context.SaveChangesAsync();
+                
+                // Clear cart count cookie
+                Response.Cookies.Append("CartCount", "0");
                 
                 return RedirectToAction("OrderConfirmation", new { orderId = order.OrderId });
             }

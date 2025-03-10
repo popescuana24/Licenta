@@ -25,34 +25,37 @@ namespace ClothingWebApp.Controllers
         }
         
         // POST: Account/Login
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Login(string email, string password, string returnUrl = "")
-        {
-            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
-            {
-                ModelState.AddModelError("", "Email and password are required.");
-                return View();
-            }
-            
-            var customer = await _context.Customers
-                .FirstOrDefaultAsync(c => c.Email.Equals(email) && c.Password == password);
-                
-            if (customer == null)
-            {
-                ModelState.AddModelError("", "Invalid email or password.");
-                return View();
-            }
-            
-            await LoginUser(customer);
-            
-            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
-            {
-                return Redirect(returnUrl);
-            }
-            
-            return RedirectToAction("Index", "Home");
-        }
+        // In AccountController.cs, update the Login POST method
+[HttpPost]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> Login(string email, string password, string returnUrl = "")
+{
+    if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
+    {
+        ModelState.AddModelError("", "Email and password are required.");
+        ViewBag.ReturnUrl = returnUrl;
+        return View();
+    }
+    
+    var customer = await _context.Customers
+        .FirstOrDefaultAsync(c => c.Email.Equals(email) && c.Password == password);
+        
+    if (customer == null)
+    {
+        ModelState.AddModelError("", "Invalid email or password.");
+        ViewBag.ReturnUrl = returnUrl;
+        return View();
+    }
+    
+    await LoginUser(customer);
+    
+    if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+    {
+        return Redirect(returnUrl);
+    }
+    
+    return RedirectToAction("Index", "Home");
+}
 
         // GET: Account/Register
         public IActionResult Register()

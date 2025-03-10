@@ -70,6 +70,11 @@ modelBuilder.Entity<Order>()
 modelBuilder.Entity<Customer>()
     .Property(c => c.CustomerId)
     .ValueGeneratedOnAdd();
+
+     modelBuilder.Entity<Cart>()
+        .HasMany(c => c.Products)
+        .WithMany()
+        .UsingEntity(j => j.ToTable("CartProducts"));
         }
     }
 }
