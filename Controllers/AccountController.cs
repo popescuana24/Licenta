@@ -26,6 +26,7 @@ namespace ClothingWebApp.Controllers
         
         // POST: Account/Login
         // In AccountController.cs, update the Login POST method
+// POST: Account/Login
 [HttpPost]
 [ValidateAntiForgeryToken]
 public async Task<IActionResult> Login(string email, string password, string returnUrl = "")
@@ -49,6 +50,9 @@ public async Task<IActionResult> Login(string email, string password, string ret
     
     await LoginUser(customer);
     
+    // After login, make sure to restore the user's cart
+    // The CartController will handle this automatically on next request
+    
     if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
     {
         return Redirect(returnUrl);
@@ -56,6 +60,7 @@ public async Task<IActionResult> Login(string email, string password, string ret
     
     return RedirectToAction("Index", "Home");
 }
+
 
         // GET: Account/Register
         public IActionResult Register()
@@ -95,11 +100,21 @@ public async Task<IActionResult> Login(string email, string password, string ret
         }
         
         // GET: Account/Logout
-        public async Task<IActionResult> Logout()
-        {
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            return RedirectToAction("Index", "Home");
-        }
+        // In AccountController.cs
+// GET: Account/Logout
+public async Task<IActionResult> Logout()
+{
+    // Don't clear the cart from cookies when logging out
+    // Just clear it from the session so it will be restored from cookie on next login
+    HttpContext.Session.Remove("ShoppingCart");
+    
+    // Update cart count cookie for the UI
+    Response.Cookies.Append("CartCount", "0");
+    
+    // Sign out
+    await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+    return RedirectToAction("Index", "Home");
+}
         
         // GET: Account/Profile
         public async Task<IActionResult> Profile()
@@ -249,5 +264,67 @@ public async Task<IActionResult> Login(string email, string password, string ret
             
             return 0;
         }
+
+        /// GET: Account/OrderHistory
+public async Task<IActionResult> OrderHistory()
+{
+    if (!User.Identity.IsAuthenticated)
+    {
+        return RedirectToAction("Login");
+    }
+    
+    try
+    {
+        int userId = GetCurrentUserId();
+    
+        var orders = await _context.Orders
+            .Include(o => o.Customer)
+            .Where(o => o.CustomerId == userId)
+            .OrderByDescending(o => o.OrderDate)
+            .ToListAsync();
+        
+        return View(orders);
+    }
+    catch (Exception ex)
+    {
+        TempData["ErrorMessage"] = "Error retrieving order history: " + ex.Message;
+        return RedirectToAction("Profile");
     }
 }
+
+// GET: Account/OrderDetails
+public async Task<IActionResult> OrderDetails(int id)
+{
+    if (!User.Identity.IsAuthenticated)
+    {
+        return RedirectToAction("Login");
+    }
+    
+    try
+    {
+        int userId = GetCurrentUserId();
+        
+        var order = await _context.Orders
+            .Include(o => o.Customer)
+            .FirstOrDefaultAsync(o => o.OrderId == id && o.CustomerId == userId);
+            
+        if (order == null)
+        {
+            TempData["ErrorMessage"] = "Order not found.";
+            return RedirectToAction("OrderHistory");
+        }
+        
+        var payment = await _context.Payments
+            .FirstOrDefaultAsync(p => p.OrderId == id);
+            
+        ViewBag.Payment = payment;
+        
+        return View(order);
+    }
+    catch (Exception ex)
+    {
+        TempData["ErrorMessage"] = "Error retrieving order details: " + ex.Message;
+        return RedirectToAction("OrderHistory");
+    }
+}
+    }}

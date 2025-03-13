@@ -1,12 +1,28 @@
-// Update your Cart.cs model
 namespace ClothingWebApp.Models
 {
-    public class Cart 
+    public class Cart
     {
         public int CartId { get; set; }  // Primary key
-        public required int CustomerId { get; set; }  // Foreign key
-        public required Customer Customer { get; set; }
+        public int CustomerId { get; set; }  // Foreign key
         
-        public List<Product> Products { get; set; } = new List<Product>();
+        // Make this nullable to resolve the non-nullable reference warning
+        public Customer? Customer { get; set; }
+        
+        // Initialize the list to avoid null reference exceptions
+        public List<CartProduct> CartItems { get; set; } = new List<CartProduct>();
+    }
+
+    // This is just a helper class, not a database entity
+    public class CartProduct
+    {
+        public int ProductId { get; set; }
+        
+        // Make Product nullable
+        public Product? Product { get; set; }
+        
+        // Initialize with empty string to solve non-null requirement
+        public string Size { get; set; } = string.Empty;
+        
+        public int Quantity { get; set; } = 1;
     }
 }

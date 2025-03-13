@@ -23,7 +23,7 @@
         </div>
     }
 
-    @if (Model != null && Model.Products != null && Model.Products.Any())
+    @if (Model != null && Model.CartItems != null && Model.CartItems.Any())
     {
         <div class="table-responsive">
             <table class="table">
@@ -31,29 +31,30 @@
                     <tr>
                         <th>Product</th>
                         <th>Size</th>
+                        <th>Quantity</th>
                         <th>Price</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var item in Model.Products)
+                    @foreach (var item in Model.CartItems)
                     {
                         <tr>
                             <td>
                                 <div class="d-flex align-items-center">
-                                    @if (!string.IsNullOrEmpty(item.ImageUrl))
+                                    @if (item.Product != null && !string.IsNullOrEmpty(item.Product.ImageUrl))
                                     {
-                                        <img src="@item.ImageUrl" alt="@item.Name" style="width: 50px; height: 50px; object-fit: cover;" class="me-3">
+                                        <img src="@item.Product.ImageUrl" alt="@item.Product.Name" style="width: 50px; height: 50px; object-fit: cover;" class="me-3">
                                     }
                                     <div>
-                                        <strong>@item.Name</strong>
+                                        <strong>@(item.Product?.Name ?? "Unknown Product")</strong>
                                         <br/>
-                                        <small class="text-muted">@item.Color</small>
+                                        <small class="text-muted">@(item.Product?.Color ?? "N/A")</small>
                                     </div>
                                 </div>
                             </td>
                             <td>
-                                @if (item.Category?.Name?.ToUpper().Contains("BAG") == true)
+                                @if (item.Product?.Category?.Name?.ToUpper().Contains("BAG") == true)
                                 {
                                     <span>One Size</span>
                                 }
@@ -62,7 +63,7 @@
                                     <form asp-action="UpdateSize" method="post" class="d-flex align-items-center">
                                         <input type="hidden" name="productId" value="@item.ProductId" />
                                         <select name="newSize" class="form-select form-select-sm" onchange="this.form.submit()">
-                                            @if (item.Category?.Name?.ToUpper() == "SHOES")
+                                            @if (item.Product?.Category?.Name?.ToUpper() == "SHOES")
                                             {
                                                 @foreach (var size in new[] { "36", "37", "38", "39", "40", "41" })
                                                 {
@@ -94,7 +95,15 @@
                                     </form>
                                 }
                             </td>
-                            <td>@item.Price.ToString("C")</td>
+                            <td>
+                                <form asp-action="UpdateQuantity" method="post" class="d-flex align-items-center">
+                                    <input type="hidden" name="productId" value="@item.ProductId" />
+                                    <input type="number" name="quantity" value="@item.Quantity" min="1" max="10" 
+                                        class="form-control form-control-sm" style="width: 60px;"
+                                        onchange="this.form.submit()" />
+                                </form>
+                            </td>
+                            <td>@((item.Product?.Price * item.Quantity ?? 0).ToString("C"))</td>
                             <td>
                                 <form asp-action="RemoveFromCart" method="post">
                                     <input type="hidden" name="productId" value="@item.ProductId" />
@@ -106,8 +115,8 @@
                 </tbody>
                 <tfoot>
                     <tr>
-                        <th colspan="2">Total</th>
-                        <th>@Model.Products.Sum(p => p.Price).ToString("C")</th>
+                        <th colspan="3">Total</th>
+                        <th>@Model.CartItems.Sum(p => p.Product?.Price * p.Quantity ?? 0).ToString("C")</th>
                         <th></th>
                     </tr>
                 </tfoot>

@@ -6,25 +6,48 @@
 
 <div class="row mt-4">
     <div class="col-md-5">
-        <!-- Simple image gallery -->
-        <div id="productImageCarousel" class="carousel slide" data-bs-ride="carousel">
+        <!-- Image carousel for multiple product views -->
+        <div id="productImageCarousel" class="carousel slide">
             <div class="carousel-inner">
+                @{
+                    // Main image
+                    string mainImage = !string.IsNullOrEmpty(Model.ImageUrl) ? Model.ImageUrl : "/images/products/no-image.jpg";
+                    
+                    // Try to derive second image path based on common naming patterns
+                    string secondImage = null;
+                    if (!string.IsNullOrEmpty(Model.ImageUrl))
+                    {
+                        if (Model.ImageUrl.Contains("_img_0"))
+                        {
+                            secondImage = Model.ImageUrl.Replace("_img_0", "_img_1");
+                        }
+                        else if (Model.ImageUrl.Contains("_1."))
+                        {
+                            secondImage = Model.ImageUrl.Replace("_1.", "_2.");
+                        }
+                        else if (Model.ImageUrl.Contains("-1."))
+                        {
+                            secondImage = Model.ImageUrl.Replace("-1.", "-2.");
+                        }
+                    }
+                }
+                
                 <div class="carousel-item active">
-                    <img src="@Model.ImageUrl" class="img-fluid" alt="@Model.Name">
+                    <img src="@mainImage" class="img-fluid" alt="@Model.Name" 
+                         onerror="this.src='/images/products/no-image.jpg'" style="max-height: 500px; margin: 0 auto;">
                 </div>
                 
-                @{
-                    // Try to derive the second image path from the first
-                    string secondImagePath = Model.ImageUrl.Replace("_img_0", "_img_1");
-                    
+                @if (!string.IsNullOrEmpty(secondImage))
+                {
                     <div class="carousel-item">
-                        <img src="@secondImagePath" class="img-fluid" alt="@Model.Name - View 2" 
-                             onerror="this.style.display='none'; document.querySelector('.carousel-control-prev').style.display='none'; document.querySelector('.carousel-control-next').style.display='none';">
+                        <img src="@secondImage" class="img-fluid" alt="@Model.Name - View 2" 
+                             onerror="this.parentElement.remove(); document.querySelectorAll('.carousel-control-prev, .carousel-control-next').forEach(c => c.style.display = 'none');"
+                             style="max-height: 500px; margin: 0 auto;">
                     </div>
                 }
             </div>
             
-            <!-- Add carousel controls -->
+            <!-- Carousel controls -->
             <button class="carousel-control-prev" type="button" data-bs-target="#productImageCarousel" data-bs-slide="prev">
                 <span class="carousel-control-prev-icon" aria-hidden="true"></span>
                 <span class="visually-hidden">Previous</span>
@@ -46,15 +69,15 @@
             {
                 <span class="badge bg-secondary">@Model.Size</span>
             }
-            <span class="badge bg-info">@Model.Category?.Name</span>
+            <span class="badge bg-info">@(Model.Category?.Name ?? "Unknown Category")</span>
         </div>
         
         <p>@Model.Description</p>
         
         <form asp-controller="Cart" asp-action="AddToCart" method="post">
             <input type="hidden" name="productId" value="@Model.ProductId" />
+            <input type="hidden" name="returnToProduct" value="true" />
             
-            <!-- Size selection -->
             @if (Model.Category?.Name?.ToUpper().Contains("BAG") != true)
             {
                 <div class="mb-4">
@@ -84,7 +107,6 @@
             }
             else
             {
-                <!-- For bags, add a hidden input with default value -->
                 <input type="hidden" name="selectedSize" value="One Size">
             }
             
@@ -92,3 +114,42 @@
         </form>
     </div>
 </div>
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize the carousel with manual controls only
+        var myCarousel = new bootstrap.Carousel(document.getElementById('productImageCarousel'), {
+            interval: false,  // Disable auto sliding
+            wrap: true,       // Allow wrapping from last to first
+            keyboard: true,   // Enable keyboard navigation
+            pause: false      // Don't pause on hover
+        });
+        
+        // Check if we have more than one slide
+        var slideCount = document.querySelectorAll('.carousel-item').length;
+        if (slideCount <= 1) {
+            // Hide carousel controls if only one image
+            document.querySelectorAll('.carousel-control-prev, .carousel-control-next').forEach(function(control) {
+                control.style.display = 'none';
+            });
+        }
+        
+        // Check if second image loads successfully
+        var secondImage = document.querySelector('.carousel-item:not(.active) img');
+        if (secondImage) {
+            secondImage.addEventListener('error', function() {
+                // Remove this slide if image fails to load
+                this.parentElement.remove();
+                
+                // Hide controls if we now have only one slide
+                if (document.querySelectorAll('.carousel-item').length <= 1) {
+                    document.querySelectorAll('.carousel-control-prev, .carousel-control-next').forEach(function(control) {
+                        control.style.display = 'none';
+                    });
+                }
+            });
+        }
+    });
+</script>
+}

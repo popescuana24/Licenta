@@ -26,19 +26,25 @@ namespace ClothingWebApp.Controllers
         }
 
         // GET: Product/Details/5
-        public async Task<IActionResult> Details(int id)
-        {
-            var product = await _context.Products
-                .Include(p => p.Category)
-                .FirstOrDefaultAsync(p => p.ProductId == id);
-                
-            if (product == null)
-            {
-                return NotFound();
-            }
-            
-            return View(product);
-        }
+public async Task<IActionResult> Details(int id)
+{
+    var product = await _context.Products
+        .Include(p => p.Category)
+        .FirstOrDefaultAsync(p => p.ProductId == id);
+        
+    if (product == null)
+    {
+        return NotFound();
+    }
+    
+    // Ensure the product has a valid image URL
+    if (string.IsNullOrEmpty(product.ImageUrl))
+    {
+        product.ImageUrl = "/images/products/no-image.jpg";
+    }
+    
+    return View(product);
+}
 
         // GET: Product/Create
         public async Task<IActionResult> Create()

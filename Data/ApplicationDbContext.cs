@@ -17,64 +17,63 @@ namespace ClothingWebApp.Data
         public DbSet<Payment> Payments { get; set; }
         public DbSet<Cart> Carts { get; set; }
 
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            base.OnModelCreating(modelBuilder);
+      protected override void OnModelCreating(ModelBuilder modelBuilder)
+{
+    base.OnModelCreating(modelBuilder);
 
-            // Configure Categories to accept explicit ID values
-            modelBuilder.Entity<Category>()
-                .Property(c => c.CategoryId)
-                .ValueGeneratedNever();  // This tells EF that the ID is not auto-generated
+    // Configure Categories to accept explicit ID values
+    modelBuilder.Entity<Category>()
+        .Property(c => c.CategoryId)
+        .ValueGeneratedNever();
 
-            // Configure Products to accept explicit ID values
-            modelBuilder.Entity<Product>()
-                .Property(p => p.ProductId)
-                .ValueGeneratedNever();  // Also make ProductId not auto-generated
+    // Configure Products to accept explicit ID values
+    modelBuilder.Entity<Product>()
+        .Property(p => p.ProductId)
+        .ValueGeneratedNever();
 
-            // Configure relationships
-            modelBuilder.Entity<Product>()
-                .HasOne(p => p.Category)
-                .WithMany(c => c.Products)
-                .HasForeignKey(p => p.CategoryId);
+    // Configure relationships
+    modelBuilder.Entity<Product>()
+        .HasOne(p => p.Category)
+        .WithMany(c => c.Products)
+        .HasForeignKey(p => p.CategoryId);
 
-            modelBuilder.Entity<Order>()
-                .HasOne(o => o.Customer)
-                .WithMany()
-                .HasForeignKey(o => o.CustomerId);
-            
-            // In ApplicationDbContext.OnModelCreating method
-modelBuilder.Entity<Order>()
-    .Property(o => o.OrderId)
-    .ValueGeneratedNever(); // Allow explicit setting of OrderId
-
-            modelBuilder.Entity<Payment>()
-                .HasOne(p => p.Order)
-                .WithMany()
-                .HasForeignKey(p => p.OrderId);
-
-            modelBuilder.Entity<Cart>()
-                .HasOne(c => c.Customer)
-                .WithMany()
-                .HasForeignKey(c => c.CustomerId);
-
-            // Fix decimal precision warnings
-            modelBuilder.Entity<Product>()
-                .Property(p => p.Price)
-                .HasColumnType("decimal(18,2)");
-
-            modelBuilder.Entity<Order>()
-                .Property(o => o.TotalAmount)
-                .HasColumnType("decimal(18,2)");
-
-                // Configure Customer's CustomerId as an identity column
-modelBuilder.Entity<Customer>()
-    .Property(c => c.CustomerId)
-    .ValueGeneratedOnAdd();
-
-     modelBuilder.Entity<Cart>()
-        .HasMany(c => c.Products)
+    modelBuilder.Entity<Order>()
+        .HasOne(o => o.Customer)
         .WithMany()
-        .UsingEntity(j => j.ToTable("CartProducts"));
-        }
+        .HasForeignKey(o => o.CustomerId);
+
+    // Configure OrderId to be auto-generated - CHANGED HERE
+    modelBuilder.Entity<Order>()
+        .Property(o => o.OrderId)
+        .ValueGeneratedOnAdd(); // Changed from ValueGeneratedNever
+
+    modelBuilder.Entity<Payment>()
+        .HasOne(p => p.Order)
+        .WithMany()
+        .HasForeignKey(p => p.OrderId);
+
+    modelBuilder.Entity<Cart>()
+        .HasOne(c => c.Customer)
+        .WithMany()
+        .HasForeignKey(c => c.CustomerId);
+        
+    // Ignore CartItems as they'll be managed through session
+    modelBuilder.Entity<Cart>()
+        .Ignore(c => c.CartItems);
+
+    // Fix decimal precision warnings
+    modelBuilder.Entity<Product>()
+        .Property(p => p.Price)
+        .HasColumnType("decimal(18,2)");
+
+    modelBuilder.Entity<Order>()
+        .Property(o => o.TotalAmount)
+        .HasColumnType("decimal(18,2)");
+
+    // Configure Customer's CustomerId as an identity column
+    modelBuilder.Entity<Customer>()
+        .Property(c => c.CustomerId)
+        .ValueGeneratedOnAdd();
+}
     }
 }

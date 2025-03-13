@@ -1,0 +1,107 @@
+@model ClothingWebApp.Models.Order
+
+@{
+    ViewData["Title"] = "Order Details";
+    var payment = ViewBag.Payment;
+}
+
+<div class="container mt-4">
+    <h1>Order Details</h1>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Order #@Model.OrderId</h5>
+                        <span class="badge bg-success">Completed</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <strong>Order Date:</strong>
+                        </div>
+                        <div class="col-md-8">
+                            @Model.OrderDate.ToString("MMMM dd, yyyy hh:mm tt")
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <strong>Total Amount:</strong>
+                        </div>
+                        <div class="col-md-8">
+                            @Model.TotalAmount.ToString("C")
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <strong>Payment Method:</strong>
+                        </div>
+                        <div class="col-md-8">
+                            @(payment?.PaymentMethod ?? "Unknown")
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <strong>Payment Status:</strong>
+                        </div>
+                        <div class="col-md-8">
+                            @if (payment != null && payment.IsPaid)
+                            {
+                                <span class="badge bg-success">Paid</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning text-dark">Pending</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Shipping Information</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Name:</strong> @Model.Customer.FirstName @Model.Customer.LastName</p>
+                    <p><strong>Address:</strong> @Model.Customer.Address</p>
+                    <p><strong>Email:</strong> @Model.Customer.Email</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Order Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Subtotal:</span>
+                        <span>@Model.TotalAmount.ToString("C")</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Shipping:</span>
+                        <span>$0.00</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Tax:</span>
+                        <span>$0.00</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between fw-bold">
+                        <span>Total:</span>
+                        <span>@Model.TotalAmount.ToString("C")</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="mt-4">
+        <a asp-action="OrderHistory" class="btn btn-secondary me-2">Back to Orders</a>
+        <a asp-controller="Home" asp-action="Index" class="btn btn-primary">Continue Shopping</a>
+    </div>
+</div>
