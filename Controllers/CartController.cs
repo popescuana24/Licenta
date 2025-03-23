@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
@@ -15,205 +16,414 @@ namespace ClothingWebApp.Controllers
     {
         private readonly ApplicationDbContext _context;
         private const string CartSessionKey = "ShoppingCart";
-        private const string CartCookiePrefix = "UserCart_";
 
         public CartController(ApplicationDbContext context)
         {
             _context = context;
         }
 
-        // GET: Cart
-        public async Task<IActionResult> Index()
+        // Helper method to get current user ID
+        private int GetCurrentUserId()
         {
-            // Redirect to login if not authenticated
-            if (!User.Identity.IsAuthenticated)
+            if (User.Identity != null && User.Identity.IsAuthenticated)
             {
-                TempData["InfoMessage"] = "Please log in or register to view your shopping cart.";
-                return RedirectToAction("Login", "Account", new { returnUrl = Url.Action("Index", "Cart") });
+                var userIdClaim = User.FindFirst("CustomerId");
+                if (userIdClaim != null && int.TryParse(userIdClaim.Value, out int id))
+                {
+                    return id;
+                }
             }
+            
+            throw new InvalidOperationException("User is not authenticated or user ID not available");
+        }
 
+        // Session-based method to get cart items while database migration is pending
+        // Helper method to get cart items
+private async Task<List<CartProduct>> GetCartItemsAsync()
+{
+    // Try to get from session first
+    string sessionJson = HttpContext.Session.GetString(CartSessionKey);
+    var cartItems = new List<CartProduct>();
+    
+    if (!string.IsNullOrEmpty(sessionJson))
+    {
+        try
+        {
+            var options = new JsonSerializerOptions
+            {
+                ReferenceHandler = ReferenceHandler.IgnoreCycles
+            };
+            
+            cartItems = JsonSerializer.Deserialize<List<CartProduct>>(sessionJson, options) ?? new List<CartProduct>();
+            return cartItems;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deserializing session cart: {ex.Message}");
+        }
+    }
+    
+    // If session failed or is empty, try to get from database
+    if (User.Identity.IsAuthenticated)
+    {
+        try
+        {
+            int userId = GetCurrentUserId();
+            
+            var cart = await _context.Carts.FirstOrDefaultAsync(c => c.CustomerId == userId);
+            if (cart != null && !string.IsNullOrEmpty(cart.CartItemsJson))
+            {
+                try
+                {
+                    var options = new JsonSerializerOptions
+                    {
+                        ReferenceHandler = ReferenceHandler.IgnoreCycles
+                    };
+                    
+                    cartItems = JsonSerializer.Deserialize<List<CartProduct>>(cart.CartItemsJson, options) ?? new List<CartProduct>();
+                    
+                    // Update session for future use
+                    HttpContext.Session.SetString(CartSessionKey, cart.CartItemsJson);
+                    
+                    return cartItems;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error deserializing DB cart: {ex.Message}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error getting cart from DB: {ex.Message}");
+        }
+    }
+    
+    return cartItems;
+}
+
+private async Task SaveCartItemsAsync(List<CartProduct> cartItems)
+{
+    try
+    {
+        // Create a clean copy without circular references
+        var simplifiedItems = cartItems.Select(item => new CartProduct
+        {
+            ProductId = item.ProductId,
+            Size = item.Size ?? string.Empty,
+            Quantity = item.Quantity
+            // Don't include Product to avoid circular references
+        }).ToList();
+        
+        var options = new JsonSerializerOptions
+        {
+            ReferenceHandler = ReferenceHandler.IgnoreCycles
+        };
+        
+        string json = JsonSerializer.Serialize(simplifiedItems, options);
+        
+        // Save to session
+        HttpContext.Session.SetString(CartSessionKey, json);
+        
+        // Save to database if user is authenticated
+        if (User.Identity.IsAuthenticated)
+        {
             try
             {
                 int userId = GetCurrentUserId();
                 
-                // Get cart items from session or cookie
-                var cartItems = GetCartItemsAsync().Result;
+                // Check if the cart exists in the database
+                var cart = await _context.Carts.FirstOrDefaultAsync(c => c.CustomerId == userId);
                 
-                // Create a safe copy to iterate
-                var itemsToRemove = new List<CartProduct>();
-                
-                // Load product details for each cart item
-                foreach (var item in cartItems)
+                if (cart == null)
                 {
-                    item.Product = await _context.Products
-                        .AsNoTracking() // Don't track the entity to avoid circular references
-                        .Include(p => p.Category)
-                        .FirstOrDefaultAsync(p => p.ProductId == item.ProductId);
-                        
-                    // Handle case where product might not exist anymore
-                    if (item.Product == null)
+                    // Create a new cart
+                    cart = new Cart
                     {
-                        // Mark for removal
-                        itemsToRemove.Add(item);
+                        CustomerId = userId,
+                        CartItemsJson = json
+                    };
+                    
+                    // This is where the error might happen - add detailed logging
+                    Console.WriteLine($"Creating new cart for user {userId}");
+                    _context.Carts.Add(cart);
+                }
+                else
+                {
+                    // Update existing cart
+                    Console.WriteLine($"Updating existing cart for user {userId}");
+                    cart.CartItemsJson = json;
+                    _context.Carts.Update(cart);
+                }
+                
+                // Save changes
+                var saveResult = await _context.SaveChangesAsync();
+                Console.WriteLine($"SaveChanges result: {saveResult} entities affected");
+                
+                // Verify the cart was saved
+                var verifyCart = await _context.Carts.FirstOrDefaultAsync(c => c.CustomerId == userId);
+                if (verifyCart != null)
+                {
+                    Console.WriteLine($"Cart verification: Found cart with JSON length: {verifyCart.CartItemsJson?.Length ?? 0}");
+                }
+                else
+                {
+                    Console.WriteLine("Cart verification failed: Cart not found after save");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Database error in SaveCartItemsAsync: {ex.Message}");
+                Console.WriteLine(ex.StackTrace);
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error saving cart: {ex.Message}");
+    }
+}
+        // Method to clear cart
+        private async Task ClearCartAsync()
+        {
+            try
+            {
+                // Clear from session
+                HttpContext.Session.Remove(CartSessionKey);
+                
+                // If authenticated, also clear from database
+                if (User.Identity.IsAuthenticated)
+                {
+                    try 
+                    {
+                        int userId = GetCurrentUserId();
+                        
+                        var cart = await _context.Carts.FirstOrDefaultAsync(c => c.CustomerId == userId);
+                        if (cart != null)
+                        {
+                            _context.Carts.Remove(cart);
+                            await _context.SaveChangesAsync();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log but don't fail if the database operation fails
+                        Console.WriteLine($"Error removing cart from database: {ex.Message}");
                     }
                 }
-                
-                // Remove any items with missing products
-                foreach (var item in itemsToRemove)
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error clearing cart: {ex.Message}");
+            }
+        }
+
+       public async Task<IActionResult> Index()
+{
+    if (!User.Identity.IsAuthenticated)
+    {
+        TempData["InfoMessage"] = "Please log in or register to view your shopping cart.";
+        return RedirectToAction("Login", "Account", new { returnUrl = Url.Action("Index", "Cart") });
+    }
+
+    try
+    {
+        int userId = GetCurrentUserId();
+        
+        // First try to get from session
+        string sessionJson = HttpContext.Session.GetString(CartSessionKey);
+        List<CartProduct> cartItems = new List<CartProduct>();
+        
+        if (!string.IsNullOrEmpty(sessionJson))
+        {
+            try
+            {
+                var options = new JsonSerializerOptions
                 {
-                    cartItems.Remove(item);
-                }
-                
-                // Save updated cart (in case items were removed)
-                await SaveCartItemsAsync(cartItems);
-                
-                // Create a cart object
-                var cart = new Cart
-                {
-                    CustomerId = userId,
-                    CartItems = cartItems
+                    ReferenceHandler = ReferenceHandler.IgnoreCycles
                 };
                 
-                // Update cart count cookie
-                int cartCount = cartItems.Sum(item => item.Quantity);
-                Response.Cookies.Append("CartCount", cartCount.ToString());
-                
-                return View(cart);
+                cartItems = JsonSerializer.Deserialize<List<CartProduct>>(sessionJson, options) ?? new List<CartProduct>();
+                Console.WriteLine($"Found {cartItems.Count} items in session cart");
             }
             catch (Exception ex)
             {
-                TempData["ErrorMessage"] = "Error retrieving cart: " + ex.Message;
-                return RedirectToAction("Index", "Home");
+                Console.WriteLine($"Error deserializing session cart: {ex.Message}");
             }
         }
-
-        // POST: Cart/AddToCart
-        [HttpPost]
-        public async Task<IActionResult> AddToCart(int productId, string selectedSize = "", string returnToProduct = "false")
+        
+        // If we have no items in session, try database as fallback
+        if (!cartItems.Any())
         {
-            // Redirect to login if not authenticated
-            if (!User.Identity.IsAuthenticated)
+            try 
             {
-                TempData["InfoMessage"] = "Please log in or register to add items to your shopping cart.";
-                return RedirectToAction("Login", "Account", new { returnUrl = Url.Action("Details", "Product", new { id = productId }) });
-            }
-
-            try
-            {
-                // Clear any previous messages
-                TempData.Remove("ErrorMessage");
-                TempData.Remove("SuccessMessage");
-                
-                // Get the product
-                var product = await _context.Products
-                    .AsNoTracking() // Don't track the entity
-                    .Include(p => p.Category)
-                    .FirstOrDefaultAsync(p => p.ProductId == productId);
-                    
-                if (product == null)
+                var cart = await _context.Carts.AsNoTracking().FirstOrDefaultAsync(c => c.CustomerId == userId);
+                if (cart != null && !string.IsNullOrEmpty(cart.CartItemsJson))
                 {
-                    TempData["ErrorMessage"] = "Product not found";
-                    return RedirectToAction("Index", "Home");
-                }
-                
-                // For products that require sizes (non-bag items), ensure size is selected
-                if (product.Category != null && 
-                    !product.Category.Name.ToUpper().Contains("BAG") && 
-                    string.IsNullOrEmpty(selectedSize))
-                {
-                    TempData["ErrorMessage"] = "Please select a size for this product";
-                    return RedirectToAction("Details", "Product", new { id = productId });
-                }
-                
-                // Set size for bag products
-                if (string.IsNullOrEmpty(selectedSize) && product.Category != null && 
-                    product.Category.Name.ToUpper().Contains("BAG"))
-                {
-                    selectedSize = "One Size";
-                }
-
-                // Get cart items
-                var cartItems = GetCartItemsAsync().Result;
-                
-                // Check if this product+size combination already exists in the cart
-                var existingItem = cartItems.FirstOrDefault(
-                    item => item.ProductId == productId && item.Size == selectedSize);
-                
-                if (existingItem != null)
-                {
-                    // Increment quantity
-                    existingItem.Quantity++;
-                }
-                else
-                {
-                    // Add new item
-                    cartItems.Add(new CartProduct
+                    var options = new JsonSerializerOptions
                     {
-                        ProductId = productId,
-                        Size = selectedSize,
-                        Quantity = 1
-                    });
+                        ReferenceHandler = ReferenceHandler.IgnoreCycles
+                    };
+                    
+                    cartItems = JsonSerializer.Deserialize<List<CartProduct>>(cart.CartItemsJson, options) ?? new List<CartProduct>();
+                    Console.WriteLine($"Found {cartItems.Count} items in database cart");
+                    
+                    // Update session
+                    HttpContext.Session.SetString(CartSessionKey, cart.CartItemsJson);
                 }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting cart from database: {ex.Message}");
+            }
+        }
+        
+        // Load product details for each cart item
+        for (int i = 0; i < cartItems.Count; i++)
+        {
+            var item = cartItems[i];
+            try 
+            {
+                var product = await _context.Products
+                    .AsNoTracking()
+                    .Include(p => p.Category)
+                    .FirstOrDefaultAsync(p => p.ProductId == item.ProductId);
                 
-                // Save updated cart
-                await SaveCartItemsAsync(cartItems);
-                
-                // Update cart count cookie
-                int cartCount = cartItems.Sum(item => item.Quantity);
-                Response.Cookies.Append("CartCount", cartCount.ToString());
-                
-                TempData["SuccessMessage"] = "Product added to cart!";
-                
-                // Return to the product page or go to cart based on parameter
-                if (returnToProduct == "true")
+                if (product != null)
                 {
-                    return RedirectToAction("Details", "Product", new { id = productId });
+                    cartItems[i].Product = product;
+                    Console.WriteLine($"Loaded product {product.Name} for cart item");
                 }
                 else
                 {
-                    return RedirectToAction(nameof(Index));
+                    Console.WriteLine($"Product with ID {item.ProductId} not found");
                 }
             }
             catch (Exception ex)
             {
-                TempData["ErrorMessage"] = "Error adding to cart: " + ex.Message;
-                return RedirectToAction("Index", "Home");
+                Console.WriteLine($"Error loading product {item.ProductId}: {ex.Message}");
             }
         }
-
-        // POST: Cart/UpdateSize
-        [HttpPost]
-        public async Task<IActionResult> UpdateSize(int productId, string newSize)
+        
+        // Remove items with missing products
+        cartItems.RemoveAll(item => item.Product == null);
+        
+        // Update cart count cookie
+        int cartCount = cartItems.Sum(item => item.Quantity);
+        Response.Cookies.Append("CartCount", cartCount.ToString());
+        
+        // Create a cart object for the view
+        var cartModel = new Cart
         {
-            if (!User.Identity.IsAuthenticated)
-            {
-                return RedirectToAction("Login", "Account");
-            }
+            CustomerId = userId,
+            CartItems = cartItems
+        };
+        
+        Console.WriteLine($"Returning cart with {cartItems.Count} items to view");
+        return View(cartModel);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error in Cart/Index: {ex.Message}");
+        Console.WriteLine(ex.StackTrace);
+        TempData["ErrorMessage"] = "Error retrieving cart: " + ex.Message;
+        return RedirectToAction("Index", "Home");
+    }
+}
+        // POST: Cart/AddToCart
+       [HttpPost]
+public async Task<IActionResult> AddToCart(int productId, string selectedSize = "", string returnToProduct = "false")
+{
+    if (!User.Identity.IsAuthenticated)
+    {
+        TempData["InfoMessage"] = "Please log in or register to add items to your shopping cart.";
+        return RedirectToAction("Login", "Account", new { returnUrl = Url.Action("Details", "Product", new { id = productId }) });
+    }
 
-            try
-            {
-                // Clear previous messages
-                TempData.Remove("ErrorMessage");
-                TempData.Remove("SuccessMessage");
-                
-                var cartItems = GetCartItemsAsync().Result;
-                var item = cartItems.FirstOrDefault(item => item.ProductId == productId);
-                
-                if (item != null)
-                {
-                    item.Size = newSize;
-                    await SaveCartItemsAsync(cartItems);
-                    TempData["SuccessMessage"] = "Size updated successfully!";
-                }
-                
-                return RedirectToAction(nameof(Index));
-            }
-            catch (Exception ex)
-            {
-                TempData["ErrorMessage"] = "Error updating size: " + ex.Message;
-                return RedirectToAction(nameof(Index));
-            }
+    try
+    {
+        TempData.Remove("ErrorMessage");
+        TempData.Remove("SuccessMessage");
+        
+        // Get the product
+        var product = await _context.Products
+            .AsNoTracking()
+            .Include(p => p.Category)
+            .FirstOrDefaultAsync(p => p.ProductId == productId);
+            
+        if (product == null)
+        {
+            TempData["ErrorMessage"] = "Product not found";
+            return RedirectToAction("Index", "Home");
         }
+        
+        // For products that require sizes, ensure size is selected
+        if (product.Category != null && 
+            !product.Category.Name.ToUpper().Contains("BAG") && 
+            string.IsNullOrEmpty(selectedSize))
+        {
+            TempData["ErrorMessage"] = "Please select a size for this product";
+            return RedirectToAction("Details", "Product", new { id = productId });
+        }
+        
+        // Set size for bag products
+        if (string.IsNullOrEmpty(selectedSize) && product.Category != null && 
+            product.Category.Name.ToUpper().Contains("BAG"))
+        {
+            selectedSize = "One Size";
+        }
+
+        // Get cart items
+        var cartItems = await GetCartItemsAsync();
+        
+        // Check if this product+size combination already exists in the cart
+        var existingItem = cartItems.FirstOrDefault(
+            item => item.ProductId == productId && item.Size == selectedSize);
+        
+        if (existingItem != null)
+        {
+            // Increment quantity
+            existingItem.Quantity++;
+        }
+        else
+        {
+            // Add new item
+            cartItems.Add(new CartProduct
+            {
+                ProductId = productId,
+                Size = selectedSize,
+                Quantity = 1
+            });
+        }
+        
+        // Save updated cart to both session and database
+        await SaveCartItemsAsync(cartItems);
+        
+        // Update cart count cookie
+        int cartCount = cartItems.Sum(item => item.Quantity);
+        Response.Cookies.Append("CartCount", cartCount.ToString());
+        
+        TempData["SuccessMessage"] = "Product added to cart!";
+        
+        // This is the important part - respect the returnToProduct parameter
+        if (returnToProduct.ToLower() == "true")
+        {
+            return RedirectToAction("Details", "Product", new { id = productId });
+        }
+        else
+        {
+            // Go directly to cart page
+            return RedirectToAction(nameof(Index));
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error in AddToCart: {ex.Message}");
+        Console.WriteLine(ex.StackTrace);
+        TempData["ErrorMessage"] = "Error adding to cart: " + ex.Message;
+        return RedirectToAction("Index", "Home");
+    }
+}
 
         // POST: Cart/UpdateQuantity
         [HttpPost]
@@ -231,7 +441,7 @@ namespace ClothingWebApp.Controllers
                     return await RemoveFromCart(productId);
                 }
                 
-                var cartItems = GetCartItemsAsync().Result;
+                var cartItems = await GetCartItemsAsync();
                 var item = cartItems.FirstOrDefault(item => item.ProductId == productId);
                 
                 if (item != null)
@@ -255,6 +465,47 @@ namespace ClothingWebApp.Controllers
             }
         }
 
+        // POST: Cart/UpdateSize
+[HttpPost]
+public async Task<IActionResult> UpdateSize(int productId, string currentSize, string newSize)
+{
+    if (!User.Identity.IsAuthenticated)
+    {
+        return RedirectToAction("Login", "Account");
+    }
+
+    try
+    {
+        // Get cart items
+        var cartItems = await GetCartItemsAsync();
+        
+        // Find the item by product ID and size
+        var item = cartItems.FirstOrDefault(i => i.ProductId == productId && i.Size == currentSize);
+        
+        if (item != null)
+        {
+            // Update the size
+            item.Size = newSize;
+            
+            // Save the updated cart
+            await SaveCartItemsAsync(cartItems);
+            
+            TempData["SuccessMessage"] = "Size updated successfully!";
+        }
+        else
+        {
+            TempData["ErrorMessage"] = "Product not found in cart.";
+        }
+        
+        return RedirectToAction(nameof(Index));
+    }
+    catch (Exception ex)
+    {
+        TempData["ErrorMessage"] = "Error updating size: " + ex.Message;
+        return RedirectToAction(nameof(Index));
+    }
+}
+
         // POST: Cart/RemoveFromCart
         [HttpPost]
         public async Task<IActionResult> RemoveFromCart(int productId)
@@ -266,11 +517,10 @@ namespace ClothingWebApp.Controllers
 
             try
             {
-                // Clear previous messages
                 TempData.Remove("ErrorMessage");
                 TempData.Remove("SuccessMessage");
                 
-                var cartItems = GetCartItemsAsync().Result;
+                var cartItems = await GetCartItemsAsync();
                 var itemToRemove = cartItems.FirstOrDefault(item => item.ProductId == productId);
                 
                 if (itemToRemove != null)
@@ -293,82 +543,8 @@ namespace ClothingWebApp.Controllers
                 return RedirectToAction(nameof(Index));
             }
         }
-        
-        // GET: Cart/Checkout
-        [HttpGet]
-        public async Task<IActionResult> Checkout()
-        {
-            // Redirect to login if not authenticated
-            if (!User.Identity.IsAuthenticated)
-            {
-                TempData["InfoMessage"] = "Please log in or register to complete your purchase.";
-                return RedirectToAction("Login", "Account", new { returnUrl = Url.Action("Checkout", "Cart") });
-            }
-            
-            try
-            {
-                var cartItems = GetCartItemsAsync().Result;
-                
-                if (!cartItems.Any())
-                {
-                    TempData["ErrorMessage"] = "Your cart is empty. Please add some products before checkout.";
-                    return RedirectToAction(nameof(Index));
-                }
-                
-                // Create a safe copy to iterate
-                var itemsToRemove = new List<CartProduct>();
-                
-                // Load product details for each cart item
-                foreach (var item in cartItems)
-                {
-                    item.Product = await _context.Products
-                        .AsNoTracking()
-                        .Include(p => p.Category)
-                        .FirstOrDefaultAsync(p => p.ProductId == item.ProductId);
-                        
-                    if (item.Product == null)
-                    {
-                        // Mark for removal
-                        itemsToRemove.Add(item);
-                    }
-                }
-                
-                // Remove any items with missing products
-                foreach (var item in itemsToRemove)
-                {
-                    cartItems.Remove(item);
-                }
-                
-                if (!cartItems.Any())
-                {
-                    TempData["ErrorMessage"] = "All products in your cart are no longer available.";
-                    return RedirectToAction(nameof(Index));
-                }
-                
-                int userId = GetCurrentUserId();
-                var customer = await _context.Customers.FindAsync(userId);
-                
-                // Create a cart object
-                var cart = new Cart
-                {
-                    CustomerId = userId,
-                    Customer = customer,
-                    CartItems = cartItems
-                };
-                
-                // Save updated cart in case items were removed
-                await SaveCartItemsAsync(cartItems);
-                
-                return View(cart);
-            }
-            catch (Exception ex)
-            {
-                TempData["ErrorMessage"] = "Error processing checkout: " + ex.Message;
-                return RedirectToAction(nameof(Index));
-            }
-        }
-        
-      [HttpPost]
+
+        [HttpPost]
 public async Task<IActionResult> PlaceOrder(string paymentMethod, string cardNumber = "", string cardName = "", string expiryDate = "", string cvv = "")
 {
     if (!User.Identity.IsAuthenticated)
@@ -379,7 +555,7 @@ public async Task<IActionResult> PlaceOrder(string paymentMethod, string cardNum
     try
     {
         int userId = GetCurrentUserId();
-        var cartItems = GetCartItemsAsync().Result;
+        var cartItems = await GetCartItemsAsync();
         
         if (!cartItems.Any())
         {
@@ -422,251 +598,308 @@ public async Task<IActionResult> PlaceOrder(string paymentMethod, string cardNum
         {
             try
             {
-                // Create order - IMPORTANT: Do NOT set OrderId explicitly
+                // Create order
                 var order = new Order
                 {
                     CustomerId = userId,
-                    Customer = customer,
                     OrderDate = DateTime.Now,
                     TotalAmount = totalAmount
                 };
                 
                 _context.Orders.Add(order);
-                await _context.SaveChangesAsync(); // Save to get the auto-generated OrderId
+                await _context.SaveChangesAsync();
                 
-                // Create payment (don't set PaymentId)
+                // Create payment
                 var payment = new Payment
                 {
                     OrderId = order.OrderId,
                     PaymentMethod = paymentMethod,
-                    IsPaid = paymentMethod == "Credit Card" // Only mark as paid for credit card payments
+                    IsPaid = paymentMethod == "Credit Card"
                 };
                 
                 _context.Payments.Add(payment);
                 await _context.SaveChangesAsync();
                 
-                // Commit transaction
-                await transaction.CommitAsync();
-                
-                // Clear cart
+                // Clear cart from session
                 await ClearCartAsync();
-                
-                // Clear cart count cookie
                 Response.Cookies.Append("CartCount", "0");
+                
+                await transaction.CommitAsync();
                 
                 return RedirectToAction("OrderConfirmation", new { orderId = order.OrderId });
             }
             catch (Exception ex)
             {
-                // Rollback transaction on error
                 await transaction.RollbackAsync();
-                throw new Exception($"Database error: {ex.Message}");
+                Console.WriteLine($"Transaction error in PlaceOrder: {ex.Message}");
+                Console.WriteLine(ex.StackTrace);
+                throw;
             }
         }
     }
     catch (Exception ex)
     {
+        Console.WriteLine($"Error in PlaceOrder: {ex.Message}");
+        Console.WriteLine(ex.StackTrace);
         TempData["ErrorMessage"] = "Error placing order: " + ex.Message;
         return RedirectToAction(nameof(Index));
     }
 }
-        
-        // GET: Cart/OrderConfirmation
-        public async Task<IActionResult> OrderConfirmation(int orderId)
-        {
-            if (!User.Identity.IsAuthenticated)
-            {
-                return RedirectToAction("Login", "Account");
-            }
+// GET: Cart/OrderConfirmation
+public async Task<IActionResult> OrderConfirmation(int orderId)
+{
+    if (!User.Identity.IsAuthenticated)
+    {
+        return RedirectToAction("Login", "Account");
+    }
 
+    try
+    {
+        var order = await _context.Orders
+            .Include(o => o.Customer)
+            .FirstOrDefaultAsync(o => o.OrderId == orderId);
+            
+        if (order == null)
+        {
+            TempData["ErrorMessage"] = "Order not found.";
+            return RedirectToAction("Index", "Home");
+        }
+        
+        var payment = await _context.Payments.FirstOrDefaultAsync(p => p.OrderId == orderId);
+        
+        ViewBag.Order = order;
+        ViewBag.Payment = payment;
+        
+        return View();
+    }
+    catch (Exception ex)
+    {
+        TempData["ErrorMessage"] = "Error retrieving order confirmation: " + ex.Message;
+        return RedirectToAction("Index", "Home");
+    }
+}
+
+// GET: Cart/Checkout
+public async Task<IActionResult> Checkout()
+{
+    if (!User.Identity.IsAuthenticated)
+    {
+        TempData["InfoMessage"] = "Please log in or register to complete your purchase.";
+        return RedirectToAction("Login", "Account", new { returnUrl = Url.Action("Checkout", "Cart") });
+    }
+
+    try
+    {
+        int userId = GetCurrentUserId();
+        
+        // Get cart items from session or database
+        var cartItems = await GetCartItemsAsync();
+        
+        // Check if cart is empty
+        if (!cartItems.Any())
+        {
+            TempData["ErrorMessage"] = "Your cart is empty. Please add products before checkout.";
+            return RedirectToAction(nameof(Index));
+        }
+        
+        // Load product details for each cart item
+        foreach (var item in cartItems.ToList())
+        {
             try
             {
-                var order = await _context.Orders
-                    .Include(o => o.Customer)
-                    .FirstOrDefaultAsync(o => o.OrderId == orderId);
+                var product = await _context.Products
+                    .AsNoTracking()
+                    .Include(p => p.Category)
+                    .FirstOrDefaultAsync(p => p.ProductId == item.ProductId);
                     
-                if (order == null)
+                if (product != null)
                 {
-                    TempData["ErrorMessage"] = "Order not found.";
-                    return RedirectToAction("Index", "Home");
+                    item.Product = product;
                 }
-                
-                var payment = await _context.Payments.FirstOrDefaultAsync(p => p.OrderId == orderId);
-                
-                ViewBag.Order = order;
-                ViewBag.Payment = payment;
-                
-                return View();
+                else
+                {
+                    // Remove items with missing products
+                    cartItems.Remove(item);
+                }
             }
             catch (Exception ex)
             {
-                TempData["ErrorMessage"] = "Error retrieving order confirmation: " + ex.Message;
-                return RedirectToAction("Index", "Home");
+                Console.WriteLine($"Error loading product {item.ProductId}: {ex.Message}");
             }
         }
         
-        // Enhanced helper methods for cart management - fixed to handle circular references
-        private Task<List<CartProduct>> GetCartItemsAsync()
+        // If all products were removed (because they don't exist anymore)
+        if (!cartItems.Any())
         {
-            // Try to get from session first
-            string json = HttpContext.Session.GetString(CartSessionKey);
-            
-            if (!string.IsNullOrEmpty(json))
+            TempData["ErrorMessage"] = "All products in your cart are no longer available.";
+            return RedirectToAction(nameof(Index));
+        }
+        
+        // Get customer details
+        var customer = await _context.Customers.FindAsync(userId);
+        
+        // Create a cart model for the view
+        var cartModel = new Cart
+        {
+            CustomerId = userId,
+            Customer = customer,
+            CartItems = cartItems
+        };
+        
+        return View(cartModel);
+    }
+    catch (Exception ex)
+    {
+        TempData["ErrorMessage"] = "Error processing checkout: " + ex.Message;
+        return RedirectToAction(nameof(Index));
+    }
+}
+        public IActionResult DebugCart()
+{
+    if (!User.Identity.IsAuthenticated)
+    {
+        return Content("Not logged in");
+    }
+    
+    try
+    {
+        int userId = GetCurrentUserId();
+        var result = new System.Text.StringBuilder();
+        result.AppendLine($"User ID: {userId}");
+        
+        // Check session
+        string sessionJson = HttpContext.Session.GetString(CartSessionKey);
+        result.AppendLine($"Session has cart data: {!string.IsNullOrEmpty(sessionJson)}");
+        
+        if (!string.IsNullOrEmpty(sessionJson))
+        {
+            try
             {
-                try
+                var options = new JsonSerializerOptions
                 {
-                    var options = new JsonSerializerOptions
+                    ReferenceHandler = ReferenceHandler.IgnoreCycles
+                };
+                
+                var sessionItems = JsonSerializer.Deserialize<List<CartProduct>>(sessionJson, options);
+                result.AppendLine($"Session cart items: {sessionItems?.Count ?? 0}");
+                
+                if (sessionItems != null && sessionItems.Any())
+                {
+                    foreach (var item in sessionItems)
                     {
-                        ReferenceHandler = ReferenceHandler.IgnoreCycles
-                    };
-                    
-                    var result = JsonSerializer.Deserialize<List<CartProduct>>(json, options);
-                    if (result != null)
-                    {
-                        return Task.FromResult(result);
+                        result.AppendLine($"- Product ID: {item.ProductId}, Size: {item.Size}, Quantity: {item.Quantity}");
                     }
                 }
-                catch (Exception ex)
-                {
-                    // Log the error but continue - session data might be corrupted
-                    Console.WriteLine($"Error deserializing session cart: {ex.Message}");
-                }
             }
-            
-            // If not in session but user is authenticated, try to get from cookie
-            if (User.Identity.IsAuthenticated)
+            catch (Exception ex)
             {
-                try
+                result.AppendLine($"Error deserializing session cart: {ex.Message}");
+            }
+        }
+        
+        // Check database
+        try
+        {
+            var cart = _context.Carts.FirstOrDefault(c => c.CustomerId == userId);
+            result.AppendLine($"Database has cart: {cart != null}");
+            
+            if (cart != null)
+            {
+                result.AppendLine($"Database cart JSON: {!string.IsNullOrEmpty(cart.CartItemsJson)}");
+                
+                if (!string.IsNullOrEmpty(cart.CartItemsJson))
                 {
-                    int userId = GetCurrentUserId();
-                    string cookieKey = $"{CartCookiePrefix}{userId}";
-                    string cookieValue = Request.Cookies[cookieKey];
-                    
-                    if (!string.IsNullOrEmpty(cookieValue))
+                    try
                     {
                         var options = new JsonSerializerOptions
                         {
                             ReferenceHandler = ReferenceHandler.IgnoreCycles
                         };
                         
-                        var cartItems = JsonSerializer.Deserialize<List<CartProduct>>(cookieValue, options);
-                        if (cartItems != null)
+                        var dbItems = JsonSerializer.Deserialize<List<CartProduct>>(cart.CartItemsJson, options);
+                        result.AppendLine($"Database cart items: {dbItems?.Count ?? 0}");
+                        
+                        if (dbItems != null && dbItems.Any())
                         {
-                            // Store in session for faster access
-                            HttpContext.Session.SetString(CartSessionKey, cookieValue);
-                            
-                            return Task.FromResult(cartItems);
+                            foreach (var item in dbItems)
+                            {
+                                result.AppendLine($"- Product ID: {item.ProductId}, Size: {item.Size}, Quantity: {item.Quantity}");
+                            }
                         }
                     }
-                }
-                catch (Exception ex)
-                {
-                    // Log the error but continue - cookie data might be corrupted
-                    Console.WriteLine($"Error deserializing cookie cart: {ex.Message}");
+                    catch (Exception ex)
+                    {
+                        result.AppendLine($"Error deserializing database cart: {ex.Message}");
+                    }
                 }
             }
-            
-            // Return empty cart if nothing found
-            return Task.FromResult(new List<CartProduct>());
+        }
+        catch (Exception ex)
+        {
+            result.AppendLine($"Error accessing database cart: {ex.Message}");
         }
         
-        private Task SaveCartItemsAsync(List<CartProduct> cartItems)
-{
-    try
-    {
-        // Create a clean copy without circular references
-        var simplifiedItems = cartItems.Select(item => new CartProduct
-        {
-            ProductId = item.ProductId,
-            Size = item.Size ?? string.Empty,
-            Quantity = item.Quantity,
-            // Include all required properties for Product
-            Product = item.Product != null ? new Product
-            {
-                ProductId = item.Product.ProductId,
-                Name = item.Product.Name ?? string.Empty,
-                Description = item.Product.Description ?? string.Empty,
-                Price = item.Product.Price,
-                Color = item.Product.Color ?? string.Empty,
-                ImageUrl = item.Product.ImageUrl ?? string.Empty,
-                Size = item.Product.Size ?? string.Empty,
-                CategoryId = item.Product.CategoryId
-                // Don't include Category to avoid circular references
-            } : null
-        }).ToList();
-        
-        var options = new JsonSerializerOptions
-        {
-            ReferenceHandler = ReferenceHandler.IgnoreCycles
-        };
-        
-        string json = JsonSerializer.Serialize(simplifiedItems, options);
-        
-        // Save to session
-        HttpContext.Session.SetString(CartSessionKey, json);
-        
-        // If authenticated, also save to cookie for persistence between sessions
-        if (User.Identity.IsAuthenticated)
-        {
-            int userId = GetCurrentUserId();
-            string cookieKey = $"{CartCookiePrefix}{userId}";
-            
-            var cookieOptions = new CookieOptions
-            {
-                Expires = DateTime.Now.AddDays(30),
-                HttpOnly = true,
-                IsEssential = true
-            };
-            
-            Response.Cookies.Append(cookieKey, json, cookieOptions);
-        }
+        return Content(result.ToString(), "text/plain");
     }
     catch (Exception ex)
     {
-        // Log the error but don't throw - this is optional functionality
-        Console.WriteLine($"Error saving cart: {ex.Message}");
+        return Content($"Error: {ex.Message}");
     }
-    
-    return Task.CompletedTask;
 }
-        private Task ClearCartAsync()
+public IActionResult ViewCart()
+{
+    var result = new System.Text.StringBuilder();
+    result.AppendLine("<h3>Cart Debug Info</h3>");
+    
+    try
+    {
+        // Check session
+        string sessionJson = HttpContext.Session.GetString(CartSessionKey);
+        if (string.IsNullOrEmpty(sessionJson))
         {
+            result.AppendLine("<p>No cart in session</p>");
+        }
+        else
+        {
+            result.AppendLine("<p>Cart found in session</p>");
+            
             try
             {
-                // Clear from session
-                HttpContext.Session.Remove(CartSessionKey);
-                
-                // If authenticated, also clear from cookie
-                if (User.Identity.IsAuthenticated)
+                var options = new JsonSerializerOptions
                 {
-                    int userId = GetCurrentUserId();
-                    string cookieKey = $"{CartCookiePrefix}{userId}";
+                    ReferenceHandler = ReferenceHandler.IgnoreCycles
+                };
+                
+                var cartItems = JsonSerializer.Deserialize<List<CartProduct>>(sessionJson, options);
+                if (cartItems == null || !cartItems.Any())
+                {
+                    result.AppendLine("<p>Cart is empty or could not be deserialized</p>");
+                }
+                else
+                {
+                    result.AppendLine($"<p>Found {cartItems.Count} items in cart:</p>");
+                    result.AppendLine("<ul>");
                     
-                    Response.Cookies.Delete(cookieKey);
+                    foreach (var item in cartItems)
+                    {
+                        result.AppendLine($"<li>Product ID: {item.ProductId}, Size: {item.Size}, Quantity: {item.Quantity}</li>");
+                    }
+                    
+                    result.AppendLine("</ul>");
                 }
             }
             catch (Exception ex)
             {
-                // Log the error but don't throw - this is optional functionality
-                Console.WriteLine($"Error clearing cart: {ex.Message}");
+                result.AppendLine($"<p>Error deserializing cart: {ex.Message}</p>");
             }
-            
-            return Task.CompletedTask;
         }
         
-        private int GetCurrentUserId()
-        {
-            // If user is authenticated, get the user ID from claims
-            if (User.Identity != null && User.Identity.IsAuthenticated)
-            {
-                var userIdClaim = User.FindFirst("CustomerId");
-                if (userIdClaim != null && int.TryParse(userIdClaim.Value, out int id))
-                {
-                    return id;
-                }
-            }
-            
-            throw new InvalidOperationException("User is not authenticated or user ID not available");
-        }
+        return Content(result.ToString(), "text/html");
+    }
+    catch (Exception ex)
+    {
+        return Content($"<p>Error: {ex.Message}</p>", "text/html");
+    }
+}
     }
 }

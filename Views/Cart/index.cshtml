@@ -23,7 +23,7 @@
         </div>
     }
 
-    @if (Model != null && Model.CartItems != null && Model.CartItems.Any())
+    @if (Model.CartItems != null && Model.CartItems.Any())
     {
         <div class="table-responsive">
             <table class="table">
@@ -44,7 +44,12 @@
                                 <div class="d-flex align-items-center">
                                     @if (item.Product != null && !string.IsNullOrEmpty(item.Product.ImageUrl))
                                     {
-                                        <img src="@item.Product.ImageUrl" alt="@item.Product.Name" style="width: 50px; height: 50px; object-fit: cover;" class="me-3">
+                                        <img src="@item.Product.ImageUrl" alt="@item.Product.Name" style="width: 50px; height: 50px; object-fit: cover;" class="me-3"
+                                            onerror="this.src='/images/products/no-image.jpg'">
+                                    }
+                                    else
+                                    {
+                                        <img src="/images/products/no-image.jpg" alt="Product image" style="width: 50px; height: 50px; object-fit: cover;" class="me-3">
                                     }
                                     <div>
                                         <strong>@(item.Product?.Name ?? "Unknown Product")</strong>
@@ -53,48 +58,7 @@
                                     </div>
                                 </div>
                             </td>
-                            <td>
-                                @if (item.Product?.Category?.Name?.ToUpper().Contains("BAG") == true)
-                                {
-                                    <span>One Size</span>
-                                }
-                                else
-                                {
-                                    <form asp-action="UpdateSize" method="post" class="d-flex align-items-center">
-                                        <input type="hidden" name="productId" value="@item.ProductId" />
-                                        <select name="newSize" class="form-select form-select-sm" onchange="this.form.submit()">
-                                            @if (item.Product?.Category?.Name?.ToUpper() == "SHOES")
-                                            {
-                                                @foreach (var size in new[] { "36", "37", "38", "39", "40", "41" })
-                                                {
-                                                    if (item.Size == size)
-                                                    {
-                                                        <option value="@size" selected>@size</option>
-                                                    }
-                                                    else
-                                                    {
-                                                        <option value="@size">@size</option>
-                                                    }
-                                                }
-                                            }
-                                            else
-                                            {
-                                                @foreach (var size in new[] { "XS", "S", "M", "L", "XL" })
-                                                {
-                                                    if (item.Size == size)
-                                                    {
-                                                        <option value="@size" selected>@size</option>
-                                                    }
-                                                    else
-                                                    {
-                                                        <option value="@size">@size</option>
-                                                    }
-                                                }
-                                            }
-                                        </select>
-                                    </form>
-                                }
-                            </td>
+                            <td>@item.Size</td>
                             <td>
                                 <form asp-action="UpdateQuantity" method="post" class="d-flex align-items-center">
                                     <input type="hidden" name="productId" value="@item.ProductId" />

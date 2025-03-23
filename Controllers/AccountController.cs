@@ -50,8 +50,15 @@ public async Task<IActionResult> Login(string email, string password, string ret
     
     await LoginUser(customer);
     
-    // After login, make sure to restore the user's cart
-    // The CartController will handle this automatically on next request
+    // Restore cart from database
+    var cart = await _context.Carts.FirstOrDefaultAsync(c => c.CustomerId == customer.CustomerId);
+    if (cart != null)
+    {
+        // Cart exists in database, update cart count cookie
+        // In a full implementation, you would load the cart items here too
+        var cartCount = 0; // Calculate actual cart item count here
+        Response.Cookies.Append("CartCount", cartCount.ToString());
+    }
     
     if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
     {
@@ -266,6 +273,7 @@ public async Task<IActionResult> Logout()
         }
 
         /// GET: Account/OrderHistory
+// In AccountController.cs
 public async Task<IActionResult> OrderHistory()
 {
     if (!User.Identity.IsAuthenticated)
@@ -276,7 +284,7 @@ public async Task<IActionResult> OrderHistory()
     try
     {
         int userId = GetCurrentUserId();
-    
+        
         var orders = await _context.Orders
             .Include(o => o.Customer)
             .Where(o => o.CustomerId == userId)
@@ -291,7 +299,6 @@ public async Task<IActionResult> OrderHistory()
         return RedirectToAction("Profile");
     }
 }
-
 // GET: Account/OrderDetails
 public async Task<IActionResult> OrderDetails(int id)
 {
