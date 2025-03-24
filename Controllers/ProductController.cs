@@ -6,6 +6,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ClothingWebApp.Controllers
 {
+    /// <summary>
+    /// Handles product display and management
+    /// </summary>
     public class ProductController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -15,7 +18,9 @@ namespace ClothingWebApp.Controllers
             _context = context;
         }
 
-        // GET: Product
+        /// <summary>
+        /// Shows all products (admin view)
+        /// </summary>
         public async Task<IActionResult> Index()
         {
             var products = await _context.Products
@@ -25,35 +30,41 @@ namespace ClothingWebApp.Controllers
             return View(products);
         }
 
-        // GET: Product/Details/5
-public async Task<IActionResult> Details(int id)
-{
-    var product = await _context.Products
-        .Include(p => p.Category)
-        .FirstOrDefaultAsync(p => p.ProductId == id);
-        
-    if (product == null)
-    {
-        return NotFound();
-    }
-    
-    // Ensure the product has a valid image URL
-    if (string.IsNullOrEmpty(product.ImageUrl))
-    {
-        product.ImageUrl = "/images/products/no-image.jpg";
-    }
-    
-    return View(product);
-}
+        /// <summary>
+        /// Shows details for a specific product
+        /// </summary>
+        public async Task<IActionResult> Details(int id)
+        {
+            var product = await _context.Products
+                .Include(p => p.Category)
+                .FirstOrDefaultAsync(p => p.ProductId == id);
+                
+            if (product == null)
+            {
+                return NotFound();
+            }
+            
+            // Ensure the product has a valid image URL
+            if (string.IsNullOrEmpty(product.ImageUrl))
+            {
+                product.ImageUrl = "/images/products/no-image.jpg";
+            }
+            
+            return View(product);
+        }
 
-        // GET: Product/Create
+        /// <summary>
+        /// Shows form to create a new product (admin functionality)
+        /// </summary>
         public async Task<IActionResult> Create()
         {
             ViewData["CategoryId"] = new SelectList(await _context.Categories.ToListAsync(), "CategoryId", "Name");
             return View();
         }
 
-        // POST: Product/Create
+        /// <summary>
+        /// Handles creation of a new product
+        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Product product)
@@ -69,7 +80,9 @@ public async Task<IActionResult> Details(int id)
             return View(product);
         }
 
-        // GET: Product/Edit/5
+        /// <summary>
+        /// Shows form to edit an existing product (admin functionality)
+        /// </summary>
         public async Task<IActionResult> Edit(int id)
         {
             var product = await _context.Products.FindAsync(id);
@@ -82,7 +95,9 @@ public async Task<IActionResult> Details(int id)
             return View(product);
         }
 
-        // POST: Product/Edit/5
+        /// <summary>
+        /// Handles editing of an existing product
+        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, Product product)
@@ -117,7 +132,9 @@ public async Task<IActionResult> Details(int id)
             return View(product);
         }
 
-        // GET: Product/Delete/5
+        /// <summary>
+        /// Shows confirmation page for deleting a product (admin functionality)
+        /// </summary>
         public async Task<IActionResult> Delete(int id)
         {
             var product = await _context.Products
@@ -132,7 +149,9 @@ public async Task<IActionResult> Details(int id)
             return View(product);
         }
 
-        // POST: Product/Delete/5
+        /// <summary>
+        /// Handles confirmation of product deletion
+        /// </summary>
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
@@ -147,6 +166,9 @@ public async Task<IActionResult> Details(int id)
             return RedirectToAction(nameof(Index));
         }
         
+        /// <summary>
+        /// Helper method to check if a product exists by ID
+        /// </summary>
         private bool ProductExists(int id)
         {
             return _context.Products.Any(e => e.ProductId == id);

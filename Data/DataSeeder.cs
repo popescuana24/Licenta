@@ -5,8 +5,14 @@ using System.Text;
 
 namespace ClothingWebApp.Data
 {
+    /// <summary>
+    /// Provides methods to seed initial data into the database
+    /// </summary>
     public static class DataSeeder
     {
+        /// <summary>
+        /// Seeds the Categories table with initial data
+        /// </summary>
         public static async Task SeedCategoriesAsync(ApplicationDbContext context)
         {
             if (await context.Categories.AnyAsync())
@@ -36,177 +42,184 @@ namespace ClothingWebApp.Data
             Console.WriteLine("Categories seeded successfully!");
         }
         
-       public static async Task ImportProductsFromCsvAsync(ApplicationDbContext context, string csvFilePath)
-{
-    // Check if products already exist
-    if (await context.Products.AnyAsync())
-    {
-        Console.WriteLine("Products already exist in database.");
-        return;
-    }
-    
-    // Verify file exists
-    if (!File.Exists(csvFilePath))
-    {
-        Console.WriteLine($"CSV file not found at: {csvFilePath}");
-        return;
-    }
-    
-    Console.WriteLine($"Importing products from: {csvFilePath}");
-    
-    try
-    {
-        // Read lines with file sharing enabled
-        List<string> lines = new List<string>();
-        using (var fileStream = new FileStream(csvFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-        using (var reader = new StreamReader(fileStream))
+        /// <summary>
+        /// Imports products from a CSV file into the database
+        /// </summary>
+        public static async Task ImportProductsFromCsvAsync(ApplicationDbContext context, string csvFilePath)
         {
-            string line;
-            while ((line = await reader.ReadLineAsync()) != null)
+            // Check if products already exist
+            if (await context.Products.AnyAsync())
             {
-                lines.Add(line);
+                Console.WriteLine("Products already exist in database.");
+                return;
             }
-        }
-        
-        if (lines.Count <= 1)
-        {
-            Console.WriteLine("CSV file is empty or contains only headers.");
-            return;
-        }
-        
-        Console.WriteLine($"CSV file contains {lines.Count} lines (including header)");
-        
-        // Process header to identify column positions
-        string[] headers = lines[0].Split(',');
-        var columnMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        
-        for (int i = 0; i < headers.Length; i++)
-        {
-            columnMap[headers[i].Trim()] = i;
-        }
-        
-        Console.WriteLine($"Found columns: {string.Join(", ", columnMap.Keys)}");
-        
-        // Process data rows
-        var products = new List<Product>();
-        int successCount = 0;
-        int errorCount = 0;
-        
-        for (int i = 1; i < lines.Count; i++)
-        {
-            if (string.IsNullOrWhiteSpace(lines[i]))
-                continue;
-                
+            
+            // Verify file exists
+            if (!File.Exists(csvFilePath))
+            {
+                Console.WriteLine($"CSV file not found at: {csvFilePath}");
+                return;
+            }
+            
+            Console.WriteLine($"Importing products from: {csvFilePath}");
+            
             try
             {
-                // Split the line, handling possible commas in quoted fields
-                var values = SplitCsvLine(lines[i]);
-                
-                // Parse product ID
-                if (!int.TryParse(values[columnMap["ProductId"]], out int productId))
+                // Read lines with file sharing enabled
+                List<string> lines = new List<string>();
+                using (var fileStream = new FileStream(csvFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                using (var reader = new StreamReader(fileStream))
                 {
-                    productId = i; // Use line number as ID if parsing fails
-                }
-                
-                // Parse category ID
-                int categoryId = 1; // Default to first category
-                if (columnMap.ContainsKey("CategoryId") && int.TryParse(values[columnMap["CategoryId"]], out int parsedCategoryId))
-                {
-                    categoryId = parsedCategoryId;
-                }
-                else if (columnMap.ContainsKey("Category"))
-                {
-                    // Try to map category name to ID
-                    string categoryName = values[columnMap["Category"]].Trim().ToUpper();
-                    var category = await context.Categories
-                        .FirstOrDefaultAsync(c => c.Name.ToUpper() == categoryName);
-                        
-                    if (category != null)
+                    string line;
+                    while ((line = await reader.ReadLineAsync()) != null)
                     {
-                        categoryId = category.CategoryId;
+                        lines.Add(line);
                     }
                 }
                 
-                // Parse price
-                decimal price = 29.99m; // Default price
-                if (columnMap.ContainsKey("Price"))
+                if (lines.Count <= 1)
                 {
-                    string priceStr = values[columnMap["Price"]].Trim();
-                    if (!decimal.TryParse(priceStr, out price))
+                    Console.WriteLine("CSV file is empty or contains only headers.");
+                    return;
+                }
+                
+                Console.WriteLine($"CSV file contains {lines.Count} lines (including header)");
+                
+                // Process header to identify column positions
+                string[] headers = lines[0].Split(',');
+                var columnMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                
+                for (int i = 0; i < headers.Length; i++)
+                {
+                    columnMap[headers[i].Trim()] = i;
+                }
+                
+                Console.WriteLine($"Found columns: {string.Join(", ", columnMap.Keys)}");
+                
+                // Process data rows
+                var products = new List<Product>();
+                int successCount = 0;
+                int errorCount = 0;
+                
+                for (int i = 1; i < lines.Count; i++)
+                {
+                    if (string.IsNullOrWhiteSpace(lines[i]))
+                        continue;
+                        
+                    try
                     {
-                        // Try alternative parsing with different culture
-                        if (!decimal.TryParse(priceStr, System.Globalization.NumberStyles.Any, 
-                            System.Globalization.CultureInfo.InvariantCulture, out price))
+                        // Split the line, handling possible commas in quoted fields
+                        var values = SplitCsvLine(lines[i]);
+                        
+                        // Parse product ID
+                        if (!int.TryParse(values[columnMap["ProductId"]], out int productId))
                         {
-                            price = 29.99m; // Use default if parsing fails
+                            productId = i; // Use line number as ID if parsing fails
+                        }
+                        
+                        // Parse category ID
+                        int categoryId = 1; // Default to first category
+                        if (columnMap.ContainsKey("CategoryId") && int.TryParse(values[columnMap["CategoryId"]], out int parsedCategoryId))
+                        {
+                            categoryId = parsedCategoryId;
+                        }
+                        else if (columnMap.ContainsKey("Category"))
+                        {
+                            // Try to map category name to ID
+                            string categoryName = values[columnMap["Category"]].Trim().ToUpper();
+                            var category = await context.Categories
+                                .FirstOrDefaultAsync(c => c.Name.ToUpper() == categoryName);
+                                
+                            if (category != null)
+                            {
+                                categoryId = category.CategoryId;
+                            }
+                        }
+                        
+                        // Parse price
+                        decimal price = 29.99m; // Default price
+                        if (columnMap.ContainsKey("Price"))
+                        {
+                            string priceStr = values[columnMap["Price"]].Trim();
+                            if (!decimal.TryParse(priceStr, out price))
+                            {
+                                // Try alternative parsing with different culture
+                                if (!decimal.TryParse(priceStr, System.Globalization.NumberStyles.Any, 
+                                    System.Globalization.CultureInfo.InvariantCulture, out price))
+                                {
+                                    price = 29.99m; // Use default if parsing fails
+                                }
+                            }
+                        }
+                        
+                        // Process image URL
+                        string imageUrl = "/images/products/no-image.jpg"; // Default image
+                        if (columnMap.ContainsKey("ImageUrl"))
+                        {
+                            string rawImagePath = values[columnMap["ImageUrl"]].Trim();
+                            imageUrl = ProcessImagePath(rawImagePath);
+                        }
+                        
+                        // Create the product
+                        var product = new Product
+                        {
+                            ProductId = productId,
+                            Name = columnMap.ContainsKey("Name") ? values[columnMap["Name"]].Trim() : $"Product {productId}",
+                            Description = columnMap.ContainsKey("Description") ? values[columnMap["Description"]].Trim() : "No description available",
+                            Price = price,
+                            Color = columnMap.ContainsKey("Color") ? values[columnMap["Color"]].Trim() : "Default",
+                            Size = columnMap.ContainsKey("Size") ? values[columnMap["Size"]].Trim() : "One Size",
+                            ImageUrl = imageUrl,
+                            CategoryId = categoryId
+                        };
+                        
+                        products.Add(product);
+                        successCount++;
+                        
+                        // Log progress periodically
+                        if (i % 20 == 0 || i == lines.Count - 1)
+                        {
+                            Console.WriteLine($"Processed {i}/{lines.Count-1} products...");
                         }
                     }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error processing line {i+1}: {ex.Message}");
+                        errorCount++;
+                    }
                 }
                 
-                // Process image URL
-                string imageUrl = "/images/products/no-image.jpg"; // Default image
-                if (columnMap.ContainsKey("ImageUrl"))
+                // Save products to database in batches
+                if (products.Any())
                 {
-                    string rawImagePath = values[columnMap["ImageUrl"]].Trim();
-                    imageUrl = ProcessImagePath(rawImagePath);
+                    const int batchSize = 20; // Using smaller batches to avoid issues
+                    int batchCount = (products.Count + batchSize - 1) / batchSize; // Ceiling division
+                    
+                    for (int i = 0; i < products.Count; i += batchSize)
+                    {
+                        var batch = products.Skip(i).Take(batchSize).ToList();
+                        await context.Products.AddRangeAsync(batch);
+                        await context.SaveChangesAsync();
+                        Console.WriteLine($"Saved batch {i/batchSize + 1}/{batchCount} ({batch.Count} products)");
+                    }
+                    
+                    Console.WriteLine($"Summary: Successfully imported {successCount} products. Errors: {errorCount}");
                 }
-                
-                // Create the product
-                var product = new Product
+                else
                 {
-                    ProductId = productId,
-                    Name = columnMap.ContainsKey("Name") ? values[columnMap["Name"]].Trim() : $"Product {productId}",
-                    Description = columnMap.ContainsKey("Description") ? values[columnMap["Description"]].Trim() : "No description available",
-                    Price = price,
-                    Color = columnMap.ContainsKey("Color") ? values[columnMap["Color"]].Trim() : "Default",
-                    Size = columnMap.ContainsKey("Size") ? values[columnMap["Size"]].Trim() : "One Size",
-                    ImageUrl = imageUrl,
-                    CategoryId = categoryId
-                };
-                
-                products.Add(product);
-                successCount++;
-                
-                // Log progress periodically
-                if (i % 20 == 0 || i == lines.Count - 1)
-                {
-                    Console.WriteLine($"Processed {i}/{lines.Count-1} products...");
+                    Console.WriteLine("No products were imported. Check for errors above.");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error processing line {i+1}: {ex.Message}");
-                errorCount++;
+                Console.WriteLine($"Critical error during CSV import: {ex.Message}");
+                Console.WriteLine(ex.StackTrace);
             }
         }
-        
-        // Save products to database in batches
-        if (products.Any())
-        {
-            const int batchSize = 20; // Using smaller batches to avoid issues
-            int batchCount = (products.Count + batchSize - 1) / batchSize; // Ceiling division
-            
-            for (int i = 0; i < products.Count; i += batchSize)
-            {
-                var batch = products.Skip(i).Take(batchSize).ToList();
-                await context.Products.AddRangeAsync(batch);
-                await context.SaveChangesAsync();
-                Console.WriteLine($"Saved batch {i/batchSize + 1}/{batchCount} ({batch.Count} products)");
-            }
-            
-            Console.WriteLine($"Summary: Successfully imported {successCount} products. Errors: {errorCount}");
-        }
-        else
-        {
-            Console.WriteLine("No products were imported. Check for errors above.");
-        }
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Critical error during CSV import: {ex.Message}");
-        Console.WriteLine(ex.StackTrace);
-    }
-}
+
+        /// <summary>
+        /// Helper method to split CSV lines correctly, handling quoted fields
+        /// </summary>
         private static string[] SplitCsvLine(string line)
         {
             var result = new List<string>();
@@ -251,223 +264,104 @@ namespace ClothingWebApp.Data
             return result.ToArray();
         }
         
+        /// <summary>
+        /// Processes image paths from CSV to standardized web paths
+        /// </summary>
         private static string ProcessImagePath(string rawImagePath)
-{
-    if (string.IsNullOrWhiteSpace(rawImagePath))
-        return "/images/products/no-image.jpg";
-    
-    // Handle array format like ['C:\\DatasetLicenta\\women_images\\FABRIC BELT BAG_img_0.jpg', 'C:\\DatasetLicenta\\women_images\\FABRIC BELT BAG_img_1.jpg']
-    if (rawImagePath.StartsWith("[") && rawImagePath.EndsWith("]"))
-    {
-        // Extract the first image path from the array
-        int firstQuoteStart = rawImagePath.IndexOf('\'') + 1;
-        int firstQuoteEnd = rawImagePath.IndexOf('\'', firstQuoteStart);
-        
-        if (firstQuoteStart > 0 && firstQuoteEnd > firstQuoteStart)
         {
-            string firstImagePath = rawImagePath.Substring(firstQuoteStart, firstQuoteEnd - firstQuoteStart);
+            if (string.IsNullOrWhiteSpace(rawImagePath))
+                return "/images/products/no-image.jpg";
             
-            // Extract the filename from the path
-            int lastSlash = Math.Max(firstImagePath.LastIndexOf('\\'), firstImagePath.LastIndexOf('/'));
-            if (lastSlash >= 0 && lastSlash < firstImagePath.Length - 1)
+            // Handle array format like ['C:\\DatasetLicenta\\women_images\\FABRIC BELT BAG_img_0.jpg', 'C:\\DatasetLicenta\\women_images\\FABRIC BELT BAG_img_1.jpg']
+            if (rawImagePath.StartsWith("[") && rawImagePath.EndsWith("]"))
             {
-                string fileName = firstImagePath.Substring(lastSlash + 1);
+                // Extract the first image path from the array
+                int firstQuoteStart = rawImagePath.IndexOf('\'') + 1;
+                int firstQuoteEnd = rawImagePath.IndexOf('\'', firstQuoteStart);
+                
+                if (firstQuoteStart > 0 && firstQuoteEnd > firstQuoteStart)
+                {
+                    string firstImagePath = rawImagePath.Substring(firstQuoteStart, firstQuoteEnd - firstQuoteStart);
+                    
+                    // Extract the filename from the path
+                    int lastSlash = Math.Max(firstImagePath.LastIndexOf('\\'), firstImagePath.LastIndexOf('/'));
+                    if (lastSlash >= 0 && lastSlash < firstImagePath.Length - 1)
+                    {
+                        string fileName = firstImagePath.Substring(lastSlash + 1);
+                        return $"/images/products/{fileName}";
+                    }
+                }
+            }
+            
+            // Standard path processing
+            string cleanPath = rawImagePath.Replace("[", "").Replace("]", "").Replace("'", "").Replace("\"", "").Trim();
+            
+            if (cleanPath.Contains("\\"))
+            {
+                int lastBackslash = cleanPath.LastIndexOf("\\");
+                string fileName = lastBackslash >= 0 ? cleanPath.Substring(lastBackslash + 1) : cleanPath;
                 return $"/images/products/{fileName}";
             }
+            
+            if (cleanPath.StartsWith("/"))
+            {
+                return cleanPath;
+            }
+            
+            return $"/images/products/{cleanPath}";
         }
-    }
-    
-    // Standard path processing
-    string cleanPath = rawImagePath.Replace("[", "").Replace("]", "").Replace("'", "").Replace("\"", "").Trim();
-    
-    if (cleanPath.Contains("\\"))
-    {
-        int lastBackslash = cleanPath.LastIndexOf("\\");
-        string fileName = lastBackslash >= 0 ? cleanPath.Substring(lastBackslash + 1) : cleanPath;
-        return $"/images/products/{fileName}";
-    }
-    
-    if (cleanPath.StartsWith("/"))
-    {
-        return cleanPath;
-    }
-    
-    return $"/images/products/{cleanPath}";
-}
-private static string GetSecondImagePath(string rawImagePath)
-{
-    if (string.IsNullOrWhiteSpace(rawImagePath) || !rawImagePath.StartsWith("[") || !rawImagePath.EndsWith("]"))
-        return "";
-    
-    // Try to find the second image in the array
-    int firstQuoteEnd = rawImagePath.IndexOf('\'', rawImagePath.IndexOf('\'') + 1);
-    if (firstQuoteEnd < 0) return "";
-    
-    int secondQuoteStart = rawImagePath.IndexOf('\'', firstQuoteEnd + 1);
-    if (secondQuoteStart < 0) return "";
-    
-    int secondQuoteEnd = rawImagePath.IndexOf('\'', secondQuoteStart + 1);
-    if (secondQuoteEnd < 0) return "";
-    
-    string secondImagePath = rawImagePath.Substring(secondQuoteStart + 1, secondQuoteEnd - secondQuoteStart - 1);
-    
-    // Extract the filename
-    int lastSlash = Math.Max(secondImagePath.LastIndexOf('\\'), secondImagePath.LastIndexOf('/'));
-    if (lastSlash >= 0 && lastSlash < secondImagePath.Length - 1)
-    {
-        string fileName = secondImagePath.Substring(lastSlash + 1);
-        return $"/images/products/{fileName}";
-    }
-    
-    return "";
-}
-        public static async Task VerifyDatabaseState(ApplicationDbContext context)
+
+        /// <summary>
+        /// Adds sample products directly to the database
+        /// Useful for testing when you don't have a CSV file
+        /// </summary>
+        public static async Task AddSampleProductsDirectly(ApplicationDbContext context)
         {
+            if (await context.Products.AnyAsync())
+            {
+                Console.WriteLine("Products already exist, skipping direct sample products");
+                return;
+            }
+            
+            Console.WriteLine("Adding sample products directly to database...");
+            
             try
             {
-                Console.WriteLine("======= DATABASE VERIFICATION =======");
-                
-                // Check if database exists
-                bool dbExists = await context.Database.CanConnectAsync();
-                Console.WriteLine($"Can connect to database: {dbExists}");
-                
-                if (!dbExists)
+                var products = new List<Product>
                 {
-                    Console.WriteLine("ERROR: Cannot connect to database!");
-                    return;
-                }
-                
-                // Check for tables
-                var tables = await context.Database.SqlQuery<string>($"SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE'").ToListAsync();
-                Console.WriteLine($"Tables in database: {string.Join(", ", tables)}");
-                
-                // Check Categories
-                var categoryCount = await context.Categories.CountAsync();
-                Console.WriteLine($"Category count: {categoryCount}");
-                if (categoryCount > 0)
-                {
-                    var categories = await context.Categories.Take(5).ToListAsync();
-                    Console.WriteLine("Sample categories:");
-                    foreach (var category in categories)
+                    new Product
                     {
-                        Console.WriteLine($"  - {category.CategoryId}: {category.Name}");
-                    }
-                }
-                
-                // Check Products
-                var productCount = await context.Products.CountAsync();
-                Console.WriteLine($"Product count: {productCount}");
-                if (productCount > 0)
-                {
-                    var products = await context.Products.Take(5).ToListAsync();
-                    Console.WriteLine("Sample products:");
-                    foreach (var product in products)
+                        ProductId = 1001,
+                        Name = "TEST PRODUCT - Leather Bag",
+                        Description = "A stylish leather bag",
+                        Price = 49.99m,
+                        Color = "Brown",
+                        Size = "One Size",
+                        ImageUrl = "/images/products/sample1.jpg",
+                        CategoryId = 1
+                    },
+                    new Product
                     {
-                        Console.WriteLine($"  - {product.ProductId}: {product.Name} (${product.Price})");
+                        ProductId = 1002,
+                        Name = "TEST PRODUCT - Blazer",
+                        Description = "An elegant blazer",
+                        Price = 89.99m,
+                        Color = "Black",
+                        Size = "M",
+                        ImageUrl = "/images/products/sample2.jpg",
+                        CategoryId = 2
                     }
-                }
+                };
                 
-                Console.WriteLine("===================================");
+                await context.Products.AddRangeAsync(products);
+                await context.SaveChangesAsync();
+                
+                Console.WriteLine($"Successfully added {products.Count} sample products directly");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"ERROR verifying database: {ex.Message}");
+                Console.WriteLine($"Error adding sample products: {ex.Message}");
             }
         }
-
-        // Add this method to your DataSeeder.cs class
-public static async Task TestCsvImport(string csvFilePath)
-{
-    try
-    {
-        if (!File.Exists(csvFilePath))
-        {
-            Console.WriteLine($"CSV FILE NOT FOUND AT: {csvFilePath}");
-            return;
-        }
-        
-        Console.WriteLine($"CSV FILE FOUND AT: {csvFilePath}");
-        Console.WriteLine($"Reading first 3 lines:");
-        
-        // Use FileShare.ReadWrite to prevent file locking issues
-        using (var fileStream = new FileStream(csvFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-        using (var reader = new StreamReader(fileStream))
-        {
-            for (int i = 0; i < 3; i++)
-            {
-                if (reader.EndOfStream) break;
-                string line = await reader.ReadLineAsync();
-                Console.WriteLine($"Line {i}: {line}");
-            }
-        }
-        
-        // Count lines without loading the whole file
-        int lineCount = 0;
-        using (var fileStream = new FileStream(csvFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-        using (var reader = new StreamReader(fileStream))
-        {
-            while (!reader.EndOfStream)
-            {
-                await reader.ReadLineAsync();
-                lineCount++;
-            }
-        }
-        
-        Console.WriteLine($"Total lines in CSV: {lineCount}");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Error testing CSV file: {ex.Message}");
-    }
-}
-
-public static async Task AddSampleProductsDirectly(ApplicationDbContext context)
-{
-    if (await context.Products.AnyAsync())
-    {
-        Console.WriteLine("Products already exist, skipping direct sample products");
-        return;
-    }
-    
-    Console.WriteLine("Adding sample products directly to database...");
-    
-    try
-    {
-        var products = new List<Product>
-        {
-            new Product
-            {
-                ProductId = 1001,
-                Name = "TEST PRODUCT - Leather Bag",
-                Description = "A stylish leather bag",
-                Price = 49.99m,
-                Color = "Brown",
-                Size = "One Size",
-                ImageUrl = "/images/products/sample1.jpg",
-                CategoryId = 1
-            },
-            new Product
-            {
-                ProductId = 1002,
-                Name = "TEST PRODUCT - Blazer",
-                Description = "An elegant blazer",
-                Price = 89.99m,
-                Color = "Black",
-                Size = "M",
-                ImageUrl = "/images/products/sample2.jpg",
-                CategoryId = 2
-            }
-        };
-        
-        await context.Products.AddRangeAsync(products);
-        await context.SaveChangesAsync();
-        
-        Console.WriteLine($"Successfully added {products.Count} sample products directly");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Error adding sample products: {ex.Message}");
-    }
-}
     }
 }

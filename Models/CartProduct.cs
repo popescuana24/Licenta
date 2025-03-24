@@ -8,7 +8,7 @@ namespace ClothingWebApp.Models
     {
         public int ProductId { get; set; }
         
-        [JsonIgnore] // To avoid circular references during serialization
+        [JsonIgnore] 
         public Product? Product { get; set; }
         
         public string Size { get; set; } = string.Empty;

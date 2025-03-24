@@ -1,37 +1,32 @@
+using ClothingWebApp.Data;
 using ClothingWebApp.Models;
 using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;
-using System.Linq;
+using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
 
 namespace ClothingWebApp.Controllers
 {
     public class CustomerController : Controller
     {
-        // Temporary in-memory collection for customers
-        private static List<Customer> _customers = new List<Customer>
-        {
-            new Customer
-            {
-                CustomerId = 1,
-                FirstName = "John",
-                LastName = "Doe",
-                Email = "john@example.com",
-                Address = "123 Main St",
-                Password = "password123"
-            }
-        };
-        private static int _nextCustomerId = 2;
+        private readonly ApplicationDbContext _context;
         
-        // GET: Customer
-        public IActionResult Index()
+        // Constructor to inject the database context
+        public CustomerController(ApplicationDbContext context)
         {
-            return View(_customers);
+            _context = context;
         }
         
-        // GET: Customer/Details/5
-        public IActionResult Details(int id)
+        // GET: Customer - Returns a list of all customers for admin view
+        public async Task<IActionResult> Index()
         {
-            var customer = _customers.FirstOrDefault(c => c.CustomerId == id);
+            var customers = await _context.Customers.ToListAsync();
+            return View(customers);
+        }
+        
+        // GET: Customer/Details/5 - Shows details for a specific customer
+        public async Task<IActionResult> Details(int id)
+        {
+            var customer = await _context.Customers.FindAsync(id);
             if (customer == null)
             {
                 return NotFound();
@@ -40,30 +35,30 @@ namespace ClothingWebApp.Controllers
             return View(customer);
         }
         
-        // GET: Customer/Create
+        // GET: Customer/Create - Shows form to create a new customer
         public IActionResult Create()
         {
             return View();
         }
         
-        // POST: Customer/Create
+        // POST: Customer/Create - Handles the creation of a new customer
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(Customer customer)
+        public async Task<IActionResult> Create(Customer customer)
         {
             if (ModelState.IsValid)
             {
-                customer.CustomerId = _nextCustomerId++;
-                _customers.Add(customer);
+                _context.Add(customer);
+                await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
             return View(customer);
         }
         
-        // GET: Customer/Edit/5
-        public IActionResult Edit(int id)
+        // GET: Customer/Edit/5 - Shows form to edit a customer
+        public async Task<IActionResult> Edit(int id)
         {
-            var customer = _customers.FirstOrDefault(c => c.CustomerId == id);
+            var customer = await _context.Customers.FindAsync(id);
             if (customer == null)
             {
                 return NotFound();
@@ -72,10 +67,10 @@ namespace ClothingWebApp.Controllers
             return View(customer);
         }
         
-        // POST: Customer/Edit/5
+        // POST: Customer/Edit/5 - Handles the update of a customer
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Edit(int id, Customer customer)
+        public async Task<IActionResult> Edit(int id, Customer customer)
         {
             if (id != customer.CustomerId)
             {
@@ -84,25 +79,32 @@ namespace ClothingWebApp.Controllers
             
             if (ModelState.IsValid)
             {
-                var existingCustomer = _customers.FirstOrDefault(c => c.CustomerId == id);
-                if (existingCustomer != null)
+                try
                 {
-                    existingCustomer.FirstName = customer.FirstName;
-                    existingCustomer.LastName = customer.LastName;
-                    existingCustomer.Email = customer.Email;
-                    existingCustomer.Address = customer.Address;
-                    existingCustomer.Password = customer.Password;
+                    _context.Update(customer);
+                    await _context.SaveChangesAsync();
                 }
-                
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!CustomerExists(id))
+                    {
+                        return NotFound();
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
                 return RedirectToAction(nameof(Index));
             }
             return View(customer);
         }
         
-        // GET: Customer/Delete/5
-        public IActionResult Delete(int id)
+        // GET: Customer/Delete/5 - Shows confirmation page for deleting a customer
+        public async Task<IActionResult> Delete(int id)
         {
-            var customer = _customers.FirstOrDefault(c => c.CustomerId == id);
+            var customer = await _context.Customers
+                .FirstOrDefaultAsync(m => m.CustomerId == id);
             if (customer == null)
             {
                 return NotFound();
@@ -111,18 +113,25 @@ namespace ClothingWebApp.Controllers
             return View(customer);
         }
         
-        // POST: Customer/Delete/5
+        // POST: Customer/Delete/5 - Handles confirmation of customer deletion
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public IActionResult DeleteConfirmed(int id)
+        public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var customer = _customers.FirstOrDefault(c => c.CustomerId == id);
+            var customer = await _context.Customers.FindAsync(id);
             if (customer != null)
             {
-                _customers.Remove(customer);
+                _context.Customers.Remove(customer);
+                await _context.SaveChangesAsync();
             }
             
             return RedirectToAction(nameof(Index));
+        }
+        
+        // Helper method to check if a customer exists by ID
+        private bool CustomerExists(int id)
+        {
+            return _context.Customers.Any(e => e.CustomerId == id);
         }
     }
 }

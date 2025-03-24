@@ -4,6 +4,10 @@ using Microsoft.Extensions.Configuration;
 
 namespace ClothingWebApp.Data
 {
+    /// <summary>
+    /// Factory for creating DbContext instances at design time
+    /// Used by EF Core migrations and other design-time tools
+    /// </summary>
     public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<ApplicationDbContext>
     {
         public ApplicationDbContext CreateDbContext(string[] args)
@@ -13,14 +17,14 @@ namespace ClothingWebApp.Data
                 .SetBasePath(Directory.GetCurrentDirectory())
                 .AddJsonFile("appsettings.json")
                 .Build();
-
+            
             // Get connection string
             var connectionString = configuration.GetConnectionString("DefaultConnection");
-
+            
             // Create DbContextOptions
             var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
             optionsBuilder.UseSqlServer(connectionString);
-
+            
             // Create DbContext
             return new ApplicationDbContext(optionsBuilder.Options);
         }

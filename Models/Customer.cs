@@ -9,6 +9,5 @@ public class Customer
     public required string Address { get; set; }
     public required string Password { get; set; }
 
-    // Optional convenience property
     public string FullName => $"{FirstName} {LastName}";
 }

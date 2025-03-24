@@ -6,6 +6,9 @@ using System.Diagnostics;
 
 namespace ClothingWebApp.Controllers
 {
+    /// <summary>
+    /// Handles main page and site navigation
+    /// </summary>
     public class HomeController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -15,58 +18,36 @@ namespace ClothingWebApp.Controllers
             _context = context;
         }
         
+        /// <summary>
+        /// Shows the homepage with featured products
+        /// </summary>
         public async Task<IActionResult> Index()
-{
-    var featuredProducts = await _context.Products
-        .Include(p => p.Category)
-        .OrderBy(p => p.ProductId)  // Add an ordering
-        .Take(6)
-        .ToListAsync();
+        {
+            // Get 6 featured products for the homepage
+            var featuredProducts = await _context.Products
+                .Include(p => p.Category)
+                .OrderBy(p => p.ProductId)
+                .Take(6)
+                .ToListAsync();
                 
-    return View(featuredProducts);
-}
+            return View(featuredProducts);
+        }
         
+        /// <summary>
+        /// Shows the privacy policy page
+        /// </summary>
         public IActionResult Privacy()
         {
             return View();
         }
         
+        /// <summary>
+        /// Handles errors and returns the error view
+        /// </summary>
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
-        // Add to HomeController
-public async Task<IActionResult> CheckDatabase()
-{
-    var data = new Dictionary<string, object>();
-    
-    // Check categories
-    var categories = await _context.Categories.ToListAsync();
-    data["Categories"] = categories.Select(c => new { c.CategoryId, c.Name }).ToList();
-    data["CategoryCount"] = categories.Count;
-    
-    // Check all products
-    var products = await _context.Products.Take(50).ToListAsync();
-    data["Products"] = products.Select(p => new { 
-        p.ProductId, 
-        p.Name, 
-        p.CategoryId, 
-        p.Price,
-        p.Color
-    }).ToList();
-    data["ProductCount"] = await _context.Products.CountAsync();
-    
-    // Check products per category
-    var productsByCategory = new Dictionary<string, int>();
-    foreach (var category in categories)
-    {
-        var count = await _context.Products.CountAsync(p => p.CategoryId == category.CategoryId);
-        productsByCategory[category.Name] = count;
-    }
-    data["ProductsByCategory"] = productsByCategory;
-    
-    return Json(data);
-}
     }
 }
