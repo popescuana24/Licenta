@@ -1,9 +1,31 @@
-namespace ClothingWebApp.Models;
+using System.ComponentModel.DataAnnotations;
 
-public class Category
+namespace ClothingWebApp.Models
 {
-    public required int CategoryId { get; set; }
-    public required string Name { get; set; }
-    public required string Description { get; set; }
-    public required ICollection<Product> Products { get; set; }
+    /// <summary>
+    /// Represents a product category in the system
+    /// </summary>
+    public class Category
+    {
+        /// <summary>
+        /// Primary key for the category
+        /// </summary>
+        public required int CategoryId { get; set; }
+        
+        /// <summary>
+        /// Name of the category
+        /// </summary>
+        public required string Name { get; set; }
+        
+        /// <summary>
+        /// Description of the category
+        /// </summary>
+        public required string Description { get; set; }
+        
+        /// <summary>
+        /// Collection of products belonging to this category
+        /// Used for navigation in entity framework
+        /// </summary>
+        public required ICollection<Product> Products { get; set; }
+    }
 }

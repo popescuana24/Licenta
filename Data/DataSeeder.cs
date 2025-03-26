@@ -70,7 +70,7 @@ namespace ClothingWebApp.Data
                 using (var fileStream = new FileStream(csvFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                 using (var reader = new StreamReader(fileStream))
                 {
-                    string line;
+                    string? line;
                     while ((line = await reader.ReadLineAsync()) != null)
                     {
                         lines.Add(line);
@@ -91,7 +91,11 @@ namespace ClothingWebApp.Data
                 
                 for (int i = 0; i < headers.Length; i++)
                 {
-                    columnMap[headers[i].Trim()] = i;
+                    string headerName = headers[i]?.Trim() ?? string.Empty;
+                    if (!string.IsNullOrEmpty(headerName))
+                    {
+                        columnMap[headerName] = i;
+                    }
                 }
                 
                 Console.WriteLine($"Found columns: {string.Join(", ", columnMap.Keys)}");
@@ -112,21 +116,30 @@ namespace ClothingWebApp.Data
                         var values = SplitCsvLine(lines[i]);
                         
                         // Parse product ID
-                        if (!int.TryParse(values[columnMap["ProductId"]], out int productId))
+                        int productId = i; // Default to line number
+                        if (columnMap.TryGetValue("ProductId", out int productIdIdx) && 
+                            productIdIdx < values.Length && 
+                            !string.IsNullOrEmpty(values[productIdIdx]) && 
+                            int.TryParse(values[productIdIdx], out int parsedProductId))
                         {
-                            productId = i; // Use line number as ID if parsing fails
+                            productId = parsedProductId;
                         }
                         
                         // Parse category ID
                         int categoryId = 1; // Default to first category
-                        if (columnMap.ContainsKey("CategoryId") && int.TryParse(values[columnMap["CategoryId"]], out int parsedCategoryId))
+                        if (columnMap.TryGetValue("CategoryId", out int categoryIdIdx) && 
+                            categoryIdIdx < values.Length && 
+                            !string.IsNullOrEmpty(values[categoryIdIdx]) && 
+                            int.TryParse(values[categoryIdIdx], out int parsedCategoryId))
                         {
                             categoryId = parsedCategoryId;
                         }
-                        else if (columnMap.ContainsKey("Category"))
+                        else if (columnMap.TryGetValue("Category", out int categoryNameIdx) && 
+                                categoryNameIdx < values.Length && 
+                                !string.IsNullOrEmpty(values[categoryNameIdx]))
                         {
                             // Try to map category name to ID
-                            string categoryName = values[columnMap["Category"]].Trim().ToUpper();
+                            string categoryName = values[categoryNameIdx].Trim().ToUpper();
                             var category = await context.Categories
                                 .FirstOrDefaultAsync(c => c.Name.ToUpper() == categoryName);
                                 
@@ -138,14 +151,16 @@ namespace ClothingWebApp.Data
                         
                         // Parse price
                         decimal price = 29.99m; // Default price
-                        if (columnMap.ContainsKey("Price"))
+                        if (columnMap.TryGetValue("Price", out int priceIdx) && 
+                            priceIdx < values.Length && 
+                            !string.IsNullOrEmpty(values[priceIdx]))
                         {
-                            string priceStr = values[columnMap["Price"]].Trim();
+                            string priceStr = values[priceIdx].Trim();
                             if (!decimal.TryParse(priceStr, out price))
                             {
                                 // Try alternative parsing with different culture
-                                if (!decimal.TryParse(priceStr, System.Globalization.NumberStyles.Any, 
-                                    System.Globalization.CultureInfo.InvariantCulture, out price))
+                                if (!decimal.TryParse(priceStr, NumberStyles.Any, 
+                                    CultureInfo.InvariantCulture, out price))
                                 {
                                     price = 29.99m; // Use default if parsing fails
                                 }
@@ -154,21 +169,58 @@ namespace ClothingWebApp.Data
                         
                         // Process image URL
                         string imageUrl = "/images/products/no-image.jpg"; // Default image
-                        if (columnMap.ContainsKey("ImageUrl"))
+                        if (columnMap.TryGetValue("ImageUrl", out int imageUrlIdx) && 
+                            imageUrlIdx < values.Length)
                         {
-                            string rawImagePath = values[columnMap["ImageUrl"]].Trim();
+                            string rawImagePath = values[imageUrlIdx]?.Trim() ?? string.Empty;
                             imageUrl = ProcessImagePath(rawImagePath);
+                        }
+                        
+                        // Get product name
+                        string name = $"Product {productId}"; // Default name
+                        if (columnMap.TryGetValue("Name", out int nameIdx) && 
+                            nameIdx < values.Length && 
+                            !string.IsNullOrEmpty(values[nameIdx]))
+                        {
+                            name = values[nameIdx].Trim();
+                        }
+                        
+                        // Get product description
+                        string description = "No description available"; // Default description
+                        if (columnMap.TryGetValue("Description", out int descIdx) && 
+                            descIdx < values.Length && 
+                            !string.IsNullOrEmpty(values[descIdx]))
+                        {
+                            description = values[descIdx].Trim();
+                        }
+                        
+                        // Get color
+                        string color = "Default"; // Default color
+                        if (columnMap.TryGetValue("Color", out int colorIdx) && 
+                            colorIdx < values.Length && 
+                            !string.IsNullOrEmpty(values[colorIdx]))
+                        {
+                            color = values[colorIdx].Trim();
+                        }
+                        
+                        // Get size
+                        string size = "One Size"; // Default size
+                        if (columnMap.TryGetValue("Size", out int sizeIdx) && 
+                            sizeIdx < values.Length && 
+                            !string.IsNullOrEmpty(values[sizeIdx]))
+                        {
+                            size = values[sizeIdx].Trim();
                         }
                         
                         // Create the product
                         var product = new Product
                         {
                             ProductId = productId,
-                            Name = columnMap.ContainsKey("Name") ? values[columnMap["Name"]].Trim() : $"Product {productId}",
-                            Description = columnMap.ContainsKey("Description") ? values[columnMap["Description"]].Trim() : "No description available",
+                            Name = name,
+                            Description = description,
                             Price = price,
-                            Color = columnMap.ContainsKey("Color") ? values[columnMap["Color"]].Trim() : "Default",
-                            Size = columnMap.ContainsKey("Size") ? values[columnMap["Size"]].Trim() : "One Size",
+                            Color = color,
+                            Size = size,
                             ImageUrl = imageUrl,
                             CategoryId = categoryId
                         };
@@ -222,6 +274,11 @@ namespace ClothingWebApp.Data
         /// </summary>
         private static string[] SplitCsvLine(string line)
         {
+            if (string.IsNullOrEmpty(line))
+            {
+                return Array.Empty<string>();
+            }
+            
             var result = new List<string>();
             bool inQuotes = false;
             var currentValue = new StringBuilder();
@@ -362,6 +419,36 @@ namespace ClothingWebApp.Data
             {
                 Console.WriteLine($"Error adding sample products: {ex.Message}");
             }
+        }
+        
+        /// <summary>
+        /// Verifies the database state by checking if categories and products exist
+        /// </summary>
+        public static async Task VerifyDatabaseState(ApplicationDbContext context)
+        {
+            int categoriesCount = await context.Categories.CountAsync();
+            int productsCount = await context.Products.CountAsync();
+            
+            Console.WriteLine("=== Database State Verification ===");
+            Console.WriteLine($"Categories: {categoriesCount}");
+            Console.WriteLine($"Products: {productsCount}");
+            
+            if (categoriesCount == 0)
+            {
+                Console.WriteLine("WARNING: No categories found in database.");
+            }
+            
+            if (productsCount == 0)
+            {
+                Console.WriteLine("WARNING: No products found in database.");
+            }
+            
+            if (categoriesCount > 0 && productsCount > 0)
+            {
+                Console.WriteLine("Database state is valid.");
+            }
+            
+            Console.WriteLine("================================");
         }
     }
 }
