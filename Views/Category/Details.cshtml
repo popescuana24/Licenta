@@ -1,51 +1,26 @@
-@using System.IO
 @model ClothingWebApp.Models.Category
 @{
     ViewData["Title"] = Model?.Name ?? "Category";
 }
 
-<div class="container mt-4">
-    <h1>@Model?.Name</h1>
-    <p>@Model?.Description</p>
+<div class="container mt-5">
+    <h1 class="section-title">@Model?.Name</h1>
+    <p class="text-center mb-5">@Model?.Description</p>
 
     @if (ViewBag.Products != null && ((IEnumerable<ClothingWebApp.Models.Product>)ViewBag.Products).Any())
     {
         <div class="row">
             @foreach (var product in (IEnumerable<ClothingWebApp.Models.Product>)ViewBag.Products)
             {
-                <div class="col-md-4 mb-4">
-                    <div class="card h-100">
-                        @if (!string.IsNullOrEmpty(product.ImageUrl))
-                        {
-                            string imgSrc = product.ImageUrl;
-                            if (imgSrc.StartsWith("[") && imgSrc.Contains("\\"))
-                            {
-                                // Extract filename from path using string operations
-                                string cleanPath = imgSrc.Replace("[", "").Replace("]", "").Replace("'", "");
-                                int lastBackslash = cleanPath.LastIndexOf("\\");
-                                string fileName = lastBackslash >= 0 ? cleanPath.Substring(lastBackslash + 1) : cleanPath;
-                                imgSrc = "/images/products/" + fileName;
-                            }
-                            <img src="@imgSrc" class="card-img-top" alt="@product.Name" style="height: 200px; object-fit: contain;">
-                        }
-                        else
-                        {
-                            <div class="bg-light text-center p-5">No Image</div>
-                        }
-                        <div class="card-body">
-                            <h5 class="card-title">@product.Name</h5>
-                            <p class="card-text">
-                                <strong>Price:</strong> @product.Price.ToString("C")<br>
-                                <strong>Color:</strong> @product.Color<br>
-                                <strong>Size:</strong> @product.Size
-                            </p>
-                        </div>
-                        <div class="card-footer">
-                            <a asp-controller="Product" asp-action="Details" asp-route-id="@product.ProductId" class="btn btn-sm btn-primary">View Details</a>
-                            <form asp-controller="Cart" asp-action="AddToCart" method="post" class="d-inline">
-                                <input type="hidden" name="productId" value="@product.ProductId" />
-                                <button type="submit" class="btn btn-sm btn-success">Add to Cart</button>
-                            </form>
+                <div class="col-md-3 mb-4">
+                    <div class="product-card">
+                        <a href="@Url.Action("Details", "Product", new { id = product.ProductId })">
+                            <img src="@product.ImageUrl" class="img-fluid" alt="@product.Name" 
+                                 onerror="this.src='/images/products/no-image.jpg'">
+                        </a>
+                        <div class="product-info">
+                            <div class="product-catalog-name">@product.Name</div>
+                            <div class="product-catalog-price">@product.Price.ToString("0.00") LEI</div>
                         </div>
                     </div>
                 </div>
@@ -58,6 +33,4 @@
             No products available in this category.
         </div>
     }
-
-    <a asp-action="Index" class="btn btn-secondary mt-3">Back to Categories</a>
 </div>

@@ -1,155 +1,134 @@
 @model ClothingWebApp.Models.Product
-
 @{
     ViewData["Title"] = Model.Name;
 }
 
-<div class="row mt-4">
-    <div class="col-md-5">
-        <!-- Image carousel for multiple product views -->
-        <div id="productImageCarousel" class="carousel slide">
-            <div class="carousel-inner">
-                @{
-                    // Main image
-                    string mainImage = !string.IsNullOrEmpty(Model.ImageUrl) ? Model.ImageUrl : "/images/products/no-image.jpg";
-                    
-                    // Try to derive second image path based on common naming patterns
-                    string secondImage = null;
-                    if (!string.IsNullOrEmpty(Model.ImageUrl))
-                    {
-                        if (Model.ImageUrl.Contains("_img_0"))
-                        {
-                            secondImage = Model.ImageUrl.Replace("_img_0", "_img_1");
-                        }
-                        else if (Model.ImageUrl.Contains("_1."))
-                        {
-                            secondImage = Model.ImageUrl.Replace("_1.", "_2.");
-                        }
-                        else if (Model.ImageUrl.Contains("-1."))
-                        {
-                            secondImage = Model.ImageUrl.Replace("-1.", "-2.");
-                        }
-                    }
-                }
-                
-                <div class="carousel-item active">
-                    <img src="@mainImage" class="img-fluid" alt="@Model.Name" 
-                         onerror="this.src='/images/products/no-image.jpg'" style="max-height: 500px; margin: 0 auto;">
+<div class="container mt-5">
+    <div class="row">
+        <!-- Product Images -->
+        <div class="col-md-6 mb-4">
+            <div class="product-gallery">
+                <div class="main-image-container mb-3">
+                    <img id="main-product-image" src="@Model.ImageUrl" alt="@Model.Name" class="img-fluid product-image" 
+                         onerror="this.src='/images/products/no-image.jpg'">
                 </div>
-                
-                @if (!string.IsNullOrEmpty(secondImage))
-                {
-                    <div class="carousel-item">
-                        <img src="@secondImage" class="img-fluid" alt="@Model.Name - View 2" 
-                             onerror="this.parentElement.remove(); document.querySelectorAll('.carousel-control-prev, .carousel-control-next').forEach(c => c.style.display = 'none');"
-                             style="max-height: 500px; margin: 0 auto;">
-                    </div>
-                }
+                <div class="thumbnails d-flex">
+                    @{
+                        // Main image
+                        <div class="thumbnail-item me-3 active" onclick="changeMainImage(this, '@Model.ImageUrl')">
+                            <img src="@Model.ImageUrl" alt="@Model.Name" class="img-fluid"
+                                 onerror="this.src='/images/products/no-image.jpg'">
+                        </div>
+                        
+                        // Use consistent naming convention for second image
+                        string imageFileName = System.IO.Path.GetFileName(Model.ImageUrl);
+                        string imageFolderPath = Model.ImageUrl.Substring(0, Model.ImageUrl.Length - imageFileName.Length);
+                        string imageNameWithoutExt = System.IO.Path.GetFileNameWithoutExtension(imageFileName);
+                        string imageExt = System.IO.Path.GetExtension(imageFileName);
+                        string secondImageName = imageNameWithoutExt + "_2" + imageExt;  // Using _2 suffix
+                        string secondImage = imageFolderPath + secondImageName;
+                        
+                        <div class="thumbnail-item me-3" onclick="changeMainImage(this, '@secondImage')">
+                            <img src="@secondImage" alt="@Model.Name - Alternate View" class="img-fluid"
+                                 onerror="this.src='/images/products/no-image.jpg'">
+                        </div>
+                    }
+                </div>
             </div>
-            
-            <!-- Carousel controls -->
-            <button class="carousel-control-prev" type="button" data-bs-target="#productImageCarousel" data-bs-slide="prev">
-                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                <span class="visually-hidden">Previous</span>
-            </button>
-            <button class="carousel-control-next" type="button" data-bs-target="#productImageCarousel" data-bs-slide="next">
-                <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                <span class="visually-hidden">Next</span>
-            </button>
-        </div>
-    </div>
-    
-    <div class="col-md-7">
-        <h1>@Model.Name</h1>
-        <h4 class="text-muted">@Model.Price.ToString("C")</h4>
-        
-        <div class="mb-3">
-            <span class="badge bg-primary">@Model.Color</span>
-            @if (!string.IsNullOrEmpty(Model.Size))
-            {
-                <span class="badge bg-secondary">@Model.Size</span>
-            }
-            <span class="badge bg-info">@(Model.Category?.Name ?? "Unknown Category")</span>
         </div>
         
-        <p>@Model.Description</p>
-        
-        <form asp-controller="Cart" asp-action="AddToCart" method="post">
-            <input type="hidden" name="productId" value="@Model.ProductId" />
-            <input type="hidden" name="returnToProduct" value="true" />
+        <!-- Product Info -->
+        <div class="col-md-6">
+            <h1 class="product-title mb-2">@Model.Name</h1>
+            <p class="text-muted mb-2">@Model.Category.Name</p>
+            <h2 class="product-detail-price mb-4">@Model.Price.ToString("0.00") LEI</h2>
             
-            @if (Model.Category?.Name?.ToUpper().Contains("BAG") != true)
+            <p class="mb-3">Color: <span class="fw-bold">@Model.Color</span></p>
+            
+            @if (!Model.Category.Name.ToUpper().Contains("BAG"))
             {
                 <div class="mb-4">
-                    <label class="form-label">Select Size:</label>
-                    
-                    @if (Model.Category?.Name?.ToUpper() == "SHOES")
-                    {
-                        <div class="btn-group" role="group" aria-label="Shoe sizes">
-                            @foreach (var size in new[] { "36", "37", "38", "39", "40", "41" })
+                    <p class="mb-2">Size:</p>
+                    <div class="size-selector d-flex flex-wrap">
+                        @{
+                            var sizes = new List<string> { "XS", "S", "M", "L", "XL" };
+                            
+                            if (Model.Category.Name.ToUpper().Contains("SHOE"))
                             {
-                                <input type="radio" class="btn-check" name="selectedSize" id="size-@size" value="@size" autocomplete="off" required>
-                                <label class="btn btn-outline-secondary" for="size-@size">@size</label>
+                                sizes = new List<string> { "36", "37", "38", "39", "40", "41", "42" };
                             }
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="btn-group" role="group" aria-label="Clothing sizes">
-                            @foreach (var size in new[] { "XS", "S", "M", "L", "XL" })
+                            
+                            foreach (var size in sizes)
                             {
-                                <input type="radio" class="btn-check" name="selectedSize" id="size-@size" value="@size" autocomplete="off" required>
-                                <label class="btn btn-outline-secondary" for="size-@size">@size</label>
+                                <div class="size-option" onclick="selectSize(this, '@size')">@size</div>
                             }
-                        </div>
-                    }
+                        }
+                    </div>
                 </div>
             }
-            else
-            {
-                <input type="hidden" name="selectedSize" value="One Size">
-            }
             
-            <button type="submit" class="btn btn-success">Add to Cart</button>
-        </form>
+            <form asp-controller="Cart" asp-action="AddToCart" method="post" class="mb-4">
+                <input type="hidden" name="productId" value="@Model.ProductId" />
+                <input type="hidden" id="selectedSize" name="selectedSize" value="@(Model.Category.Name.ToUpper().Contains("BAG") ? "One Size" : "")" />
+                <button type="submit" class="btn w-100" id="addToCartBtn" style="background-color: #b10000; color: white;">ADD TO CART</button>
+            </form>
+            
+            <div class="product-description mt-4">
+                <h4>Product Details</h4>
+                <p>@Model.Description</p>
+            </div>
+        </div>
     </div>
 </div>
 
 @section Scripts {
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Initialize the carousel with manual controls only
-        var myCarousel = new bootstrap.Carousel(document.getElementById('productImageCarousel'), {
-            interval: false,  // Disable auto sliding
-            wrap: true,       // Allow wrapping from last to first
-            keyboard: true,   // Enable keyboard navigation
-            pause: false      // Don't pause on hover
+    <script>
+        // Make sure to select a size by default
+        document.addEventListener('DOMContentLoaded', function() {
+            const sizeOptions = document.querySelectorAll('.size-option');
+            if (sizeOptions.length > 0) {
+                selectSize(sizeOptions[0], sizeOptions[0].textContent.trim());
+            }
         });
         
-        // Check if we have more than one slide
-        var slideCount = document.querySelectorAll('.carousel-item').length;
-        if (slideCount <= 1) {
-            // Hide carousel controls if only one image
-            document.querySelectorAll('.carousel-control-prev, .carousel-control-next').forEach(function(control) {
-                control.style.display = 'none';
+        function selectSize(element, size) {
+            // Remove active class from all size options
+            document.querySelectorAll('.size-option').forEach(el => {
+                el.classList.remove('active');
             });
+            
+            // Add active class to clicked element
+            element.classList.add('active');
+            
+            // Update hidden input
+            document.getElementById('selectedSize').value = size;
+            
+            // Enable add to cart button
+            document.getElementById('addToCartBtn').disabled = false;
         }
         
-        // Check if second image loads successfully
-        var secondImage = document.querySelector('.carousel-item:not(.active) img');
-        if (secondImage) {
-            secondImage.addEventListener('error', function() {
-                // Remove this slide if image fails to load
-                this.parentElement.remove();
-                
-                // Hide controls if we now have only one slide
-                if (document.querySelectorAll('.carousel-item').length <= 1) {
-                    document.querySelectorAll('.carousel-control-prev, .carousel-control-next').forEach(function(control) {
-                        control.style.display = 'none';
-                    });
-                }
+        function changeMainImage(thumbnail, imageSrc) {
+            // Update main image
+            const mainImage = document.getElementById('main-product-image');
+            
+            // Store original src in case the new one fails to load
+            const originalSrc = mainImage.src;
+            
+            // Set up error handler before changing source
+            mainImage.onerror = function() {
+                // If the new image fails to load, revert to the original
+                this.src = originalSrc;
+                console.log('Failed to load alternate image: ' + imageSrc);
+            };
+            
+            // Try to load the new image
+            mainImage.src = imageSrc;
+            
+            // Update active thumbnail
+            document.querySelectorAll('.thumbnail-item').forEach(item => {
+                item.classList.remove('active');
             });
+            thumbnail.classList.add('active');
         }
-    });
-</script>
+    </script>
 }

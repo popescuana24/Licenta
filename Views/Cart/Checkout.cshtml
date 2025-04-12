@@ -4,132 +4,169 @@
     ViewData["Title"] = "Checkout";
 }
 
-<div class="container mt-4">
-    <h1>Checkout</h1>
-
+<div class="container mt-5">
     <div class="row">
-        <div class="col-md-8">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5>Order Summary</h5>
+        <div class="col-md-10 mx-auto">
+            <div class="order-step mb-5">
+                <div class="step-item step-complete">
+                    <div class="step-number">
+                        <i class="fas fa-check"></i>
+                    </div>
+                    <p>Cart</p>
                 </div>
-                <div class="card-body">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Product</th>
-                                <th>Size</th>
-                                <th>Quantity</th>
-                                <th>Price</th>
-                                <th>Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var item in Model.CartItems)
+                <div class="step-item step-active">
+                    <div class="step-number">2</div>
+                    <p>Checkout</p>
+                </div>
+                <div class="step-item">
+                    <div class="step-number">3</div>
+                    <p>Confirmation</p>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-7">
+                    <div class="card order-card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">Shipping Information</h5>
+                        </div>
+                        <div class="card-body">
+                            @if (Model.Customer != null)
                             {
-                                <tr>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            @if (item.Product != null && !string.IsNullOrEmpty(item.Product.ImageUrl))
-                                            {
-                                                <img src="@item.Product.ImageUrl" alt="@item.Product.Name" 
-                                                     style="width: 50px; height: 50px; object-fit: cover;" class="me-3"
-                                                     onerror="this.src='/images/products/no-image.jpg'">
-                                            }
-                                            else
-                                            {
-                                                <img src="/images/products/no-image.jpg" alt="Product image" 
-                                                     style="width: 50px; height: 50px; object-fit: cover;" class="me-3">
-                                            }
-                                            <div>
-                                                <strong>@(item.Product?.Name ?? "Unknown Product")</strong>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>@item.Size</td>
-                                    <td>@item.Quantity</td>
-                                    <td>@(item.Product?.Price.ToString("C") ?? "$0.00")</td>
-                                    <td>@((item.Product?.Price * item.Quantity ?? 0).ToString("C"))</td>
-                                </tr>
+                                <div class="mb-3">
+                                    <p class="mb-0"><strong>@Model.Customer.FirstName @Model.Customer.LastName</strong></p>
+                                    <p class="mb-0">@Model.Customer.Address</p>
+                                    <p class="mb-0">@Model.Customer.Email</p>
+                                </div>
+                                <a href="@Url.Action("EditProfile", "Account")" class="btn btn-sm btn-outline-dark">
+                                    <i class="fas fa-pen me-1"></i> Edit Address
+                                </a>
                             }
-                        </tbody>
-                        <tfoot>
-                            <tr>
-                                <th colspan="4">Total</th>
-                                <th>@Model.CartItems.Sum(item => item.Product?.Price * item.Quantity ?? 0).ToString("C")</th>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
-            </div>
-
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5>Shipping Information</h5>
-                </div>
-                <div class="card-body">
-                    @if (Model.Customer != null)
-                    {
-                        <p><strong>Name:</strong> @Model.Customer.FirstName @Model.Customer.LastName</p>
-                        <p><strong>Address:</strong> @Model.Customer.Address</p>
-                        <p><strong>Email:</strong> @Model.Customer.Email</p>
-                    }
-                    else
-                    {
-                        <p>Customer information not available. Please <a asp-controller="Account" asp-action="Login">login</a> to continue.</p>
-                    }
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5>Payment Information</h5>
-                </div>
-                <div class="card-body">
-                    <form asp-action="PlaceOrder" method="post">
-                        <div class="mb-3">
-                            <label class="form-label">Payment Method</label>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="paymentMethod" id="creditCard" value="Credit Card" checked>
-                                <label class="form-check-label" for="creditCard">
-                                    Credit Card
-                                </label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="paymentMethod" id="cashOnDelivery" value="Cash on Delivery">
-                                <label class="form-check-label" for="cashOnDelivery">
-                                    Cash on Delivery
-                                </label>
-                            </div>
+                            else
+                            {
+                                <p>Please <a asp-controller="Account" asp-action="Login">login</a> to continue.</p>
+                            }
                         </div>
-
-                        <div id="creditCardDetails">
-                            <div class="mb-3">
-                                <label for="cardNumber" class="form-label">Card Number</label>
-                                <input type="text" class="form-control" id="cardNumber" name="cardNumber" placeholder="1234 5678 9012 3456">
-                            </div>
-                            <div class="mb-3">
-                                <label for="cardName" class="form-label">Name on Card</label>
-                                <input type="text" class="form-control" id="cardName" name="cardName">
-                            </div>
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label for="expiryDate" class="form-label">Expiry Date</label>
-                                    <input type="text" class="form-control" id="expiryDate" name="expiryDate" placeholder="MM/YY">
+                    </div>
+                    
+                    <!-- Payment Information -->
+                    <div class="card order-card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Payment Information</h5>
+                        </div>
+                        <div class="card-body">
+                            <form asp-action="PlaceOrder" method="post">
+                                <div class="mb-4">
+                                    <label class="form-label d-block">Payment Method</label>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="paymentMethod" id="creditCard" value="Credit Card" checked>
+                                        <label class="form-check-label" for="creditCard">
+                                            Credit/Debit Card
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="paymentMethod" id="cashOnDelivery" value="Cash on Delivery">
+                                        <label class="form-check-label" for="cashOnDelivery">
+                                            Cash on Delivery
+                                        </label>
+                                    </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <label for="cvv" class="form-label">CVV</label>
-                                    <input type="text" class="form-control" id="cvv" name="cvv" placeholder="123">
+
+                                <div id="creditCardDetails">
+                                    <div class="mb-3">
+                                        <label for="cardNumber" class="form-label">Card Number</label>
+                                        <input type="text" class="form-control" id="cardNumber" name="cardNumber" placeholder="1234 5678 9012 3456">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="cardName" class="form-label">Name on Card</label>
+                                        <input type="text" class="form-control" id="cardName" name="cardName">
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label for="expiryDate" class="form-label">Expiry Date</label>
+                                            <input type="text" class="form-control" id="expiryDate" name="expiryDate" placeholder="MM/YY">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="cvv" class="form-label">CVV</label>
+                                            <input type="text" class="form-control" id="cvv" name="cvv" placeholder="123">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="card-icons mb-4">
+                                    <i class="fab fa-cc-visa fa-2x me-2"></i>
+                                    <i class="fab fa-cc-mastercard fa-2x me-2"></i>
+                                    <i class="fab fa-cc-amex fa-2x me-2"></i>
+                                    <i class="fab fa-cc-discover fa-2x"></i>
+                                </div>
+
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-checkout">Place Order</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-5">
+                    <div class="card order-card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">Order Summary</h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <tbody>
+                                        @foreach (var item in Model.CartItems)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <div class="d-flex align-items-center">
+                                                        @if (item.Product != null && !string.IsNullOrEmpty(item.Product.ImageUrl))
+                                                        {
+                                                            <img src="@item.Product.ImageUrl" alt="@item.Product.Name" 
+                                                                 style="width: 50px; height: 50px; object-fit: cover;" class="me-3"
+                                                                 onerror="this.src='/images/products/no-image.jpg'">
+                                                        }
+                                                        else
+                                                        {
+                                                            <img src="/images/products/no-image.jpg" alt="Product image" 
+                                                                 style="width: 50px; height: 50px; object-fit: cover;" class="me-3">
+                                                        }
+                                                        <div>
+                                                            <p class="mb-0"><strong>@(item.Product?.Name ?? "Unknown Product")</strong></p>
+                                                            <small class="text-muted">Size: @item.Size × @item.Quantity</small>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td class="text-end">@((item.Product?.Price * item.Quantity ?? 0).ToString("C"))</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <div class="p-3 border-top">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Subtotal:</span>
+                                    <span>@Model.CartItems.Sum(p => p.Product?.Price * p.Quantity ?? 0).ToString("C")</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Shipping:</span>
+                                    <span>FREE</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Tax:</span>
+                                    <span>$0.00</span>
+                                </div>
+                                <hr>
+                                <div class="d-flex justify-content-between order-total">
+                                    <span><strong>Total:</strong></span>
+                                    <span><strong>@Model.CartItems.Sum(p => p.Product?.Price * p.Quantity ?? 0).ToString("C")</strong></span>
                                 </div>
                             </div>
                         </div>
-
-                        <div class="mb-3">
-                            <button type="submit" class="btn btn-success w-100">Place Order</button>
-                        </div>
-                    </form>
+                    </div>
                 </div>
             </div>
         </div>
@@ -138,8 +175,8 @@
 
 @section Scripts {
     <script>
-        // Show/hide credit card details based on payment method selection
         document.addEventListener('DOMContentLoaded', function() {
+            // Show/hide credit card details based on payment method selection
             const creditCardRadio = document.getElementById('creditCard');
             const cashOnDeliveryRadio = document.getElementById('cashOnDelivery');
             const creditCardDetails = document.getElementById('creditCardDetails');

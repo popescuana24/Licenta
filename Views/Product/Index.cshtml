@@ -4,50 +4,33 @@
     ViewData["Title"] = "Products";
 }
 
-<h1>Products</h1>
+<div class="container mt-5">
+    <h1 class="section-title">Our Products</h1>
 
-@if (Model.Any())
-{
-    <div class="row">
-        @foreach (var product in Model)
-        {
-            <div class="col-md-4 mb-4">
-                <div class="card h-100">
-                    @if (!string.IsNullOrEmpty(product.ImageUrl))
-                    {
-                        <img src="@product.ImageUrl" class="card-img-top" alt="@product.Name" style="height: 200px; object-fit: cover;">
-                    }
-                    else
-                    {
-                        <div class="bg-light text-center p-5">No Image</div>
-                    }
-                    <div class="card-body">
-                        <h5 class="card-title">@product.Name</h5>
-                        <p class="card-text">@product.Description</p>
-                        <p>
-                            <span class="badge bg-primary">@product.Color</span>
-                            @if (!string.IsNullOrEmpty(product.Size))
-                            {
-                                <span class="badge bg-secondary">@product.Size</span>
-                            }
-                        </p>
-                        <h6>@product.Price.ToString("C")</h6>
-                    </div>
-                    <div class="card-footer">
-                        <a asp-action="Details" asp-route-id="@product.ProductId" class="btn btn-sm btn-primary">View Details</a>
-                        <form asp-controller="Cart" asp-action="AddToCart" method="post" class="d-inline">
-                            <input type="hidden" name="productId" value="@product.ProductId" />
-                            <button type="submit" class="btn btn-sm btn-success">Add to Cart</button>
-                        </form>
+    @if (Model.Any())
+    {
+        <div class="row">
+            @foreach (var product in Model)
+            {
+                <div class="col-md-3 mb-4">
+                    <div class="product-card">
+                        <a href="@Url.Action("Details", "Product", new { id = product.ProductId })">
+                            <img src="@product.ImageUrl" class="img-fluid" alt="@product.Name" 
+                                 onerror="this.src='/images/products/no-image.jpg'">
+                        </a>
+                        <div class="product-info">
+                            <div class="product-catalog-name">@product.Name</div>
+                            <div class="product-catalog-price">@product.Price.ToString("0.00") LEI</div>
+                        </div>
                     </div>
                 </div>
-            </div>
-        }
-    </div>
-}
-else
-{
-    <div class="alert alert-info">
-        No products available.
-    </div>
-}
+            }
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">
+            No products available.
+        </div>
+    }
+</div>

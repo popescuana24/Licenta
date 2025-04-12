@@ -17,11 +17,19 @@ namespace ClothingWebApp.Controllers
         {
             _context = context;
         }
+
+        public async Task<IActionResult> Index()
+{
+    var categories = await _context.Categories.ToListAsync();
+    ViewBag.Categories = categories;
+    
+    return View();
+}
         
         /// <summary>
         /// Shows the homepage with featured products
         /// </summary>
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index2()
         {
             // Get 6 featured products for the homepage
             var featuredProducts = await _context.Products

@@ -5,8 +5,20 @@
       "PackagePath": "staticwebassets\\ClothingWebApp.skmnf4sbjh.bundle.scp.css"
     },
     {
+      "Id": "C:\\Users\\popes\\Desktop\\ClothingWebApp\\wwwroot\\css\\site.css",
+      "PackagePath": "staticwebassets\\css\\site.css"
+    },
+    {
       "Id": "C:\\Users\\popes\\Desktop\\ClothingWebApp\\wwwroot\\favicon.ico",
       "PackagePath": "staticwebassets\\favicon.ico"
+    },
+    {
+      "Id": "C:\\Users\\popes\\Desktop\\ClothingWebApp\\wwwroot\\images\\firstImage.png",
+      "PackagePath": "staticwebassets\\images\\firstImage.png"
+    },
+    {
+      "Id": "C:\\Users\\popes\\Desktop\\ClothingWebApp\\wwwroot\\images\\firstImage2.png",
+      "PackagePath": "staticwebassets\\images\\firstImage2.png"
     },
     {
       "Id": "C:\\Users\\popes\\Desktop\\ClothingWebApp\\wwwroot\\images\\products\\100% LINEN BLOUSE_img_0.jpg",
@@ -11245,6 +11257,14 @@
       "PackagePath": "staticwebassets\\images\\products\\site.css"
     },
     {
+      "Id": "C:\\Users\\popes\\Desktop\\ClothingWebApp\\wwwroot\\images\\secondImage.jpg",
+      "PackagePath": "staticwebassets\\images\\secondImage.jpg"
+    },
+    {
+      "Id": "C:\\Users\\popes\\Desktop\\ClothingWebApp\\wwwroot\\images\\thirdImage.jpg",
+      "PackagePath": "staticwebassets\\images\\thirdImage.jpg"
+    },
+    {
       "Id": "C:\\Users\\popes\\Desktop\\ClothingWebApp\\wwwroot\\js\\site.js",
       "PackagePath": "staticwebassets\\js\\site.js"
     },
@@ -11487,6 +11507,10 @@
     {
       "Id": "C:\\Users\\popes\\Desktop\\ClothingWebApp\\wwwroot\\lib\\jquery\\dist\\jquery.slim.min.map",
       "PackagePath": "staticwebassets\\lib\\jquery\\dist\\jquery.slim.min.map"
+    },
+    {
+      "Id": "C:\\Users\\popes\\Desktop\\ClothingWebApp\\wwwroot\\videos\\fashion.mp4",
+      "PackagePath": "staticwebassets\\videos\\fashion.mp4"
     },
     {
       "Id": "obj\\Debug\\net9.0\\staticwebassets\\msbuild.ClothingWebApp.Microsoft.AspNetCore.StaticWebAssetEndpoints.props",

@@ -1,59 +1,81 @@
-﻿@using System.IO
-@model IEnumerable<ClothingWebApp.Models.Product>
-
-@{
-    ViewData["Title"] = "Home Page";
+﻿@{
+    ViewData["Title"] = "Home";
 }
 
-<div class="text-center mb-4">
-    <h1>Welcome to Clothing Shop</h1>
-    <p>Explore our latest collections</p>
-</div>
-
-<div class="row">
-    @if (Model != null && Model.Any())
-    {
-        foreach (var product in Model)
-        {
-            <div class="col-md-4 mb-4">
-                <div class="card h-100">
-                    @if (!string.IsNullOrEmpty(product.ImageUrl))
-                    {
-                        <img src="@product.ImageUrl" class="card-img-top" alt="@product.Name" style="height: 200px; object-fit: cover;">
-                    }
-                    else
-                    {
-                        <div class="bg-light text-center p-5">No Image</div>
-                    }
-                    <div class="card-body">
-                        <h5 class="card-title">@product.Name</h5>
-                        <p class="card-text">@product.Description</p>
-                        <p>
-                            <span class="badge bg-primary">@product.Color</span>
-                            @if (!string.IsNullOrEmpty(product.Size))
-                            {
-                                <span class="badge bg-secondary">@product.Size</span>
-                            }
-                        </p>
-                        <h6>@product.Price.ToString("C")</h6>
-                    </div>
-                    <div class="card-footer">
-                        <a asp-controller="Product" asp-action="Details" asp-route-id="@product.ProductId" class="btn btn-sm btn-primary">View Details</a>
-                        <form asp-controller="Cart" asp-action="AddToCart" method="post" class="d-inline">
-                            <input type="hidden" name="productId" value="@product.ProductId" />
-                            <button type="submit" class="btn btn-sm btn-success">Add to Cart</button>
-                        </form>
+<!-- Hero Section with Black Background and Model -->
+<div class="hero-section">
+    <div class="container-fluid px-0">
+        <div class="row g-0">
+            <div class="col-md-5">
+                <img src="/images/firstImage2.png" alt="Model" class="hero-model">
+            </div>
+            <div class="col-md-7 d-flex align-items-center">
+                <div class="hero-content text-end mx-5">
+                    <h1 class="hero-title">YOUR STYLE</h1>
+                    <h1 class="hero-title">YOUR SIGNATURE</h1>
+                    <p class="hero-subtitle mt-4"><i class="fas fa-do-not-enter    "></i>
+                        Elevate Your Wardrobe. Empower Your Confidence. And Embrace<br>
+                        Your Unique Fashion Journey
+                    </p>
+                    <div class="mt-4">
+                        <a href="/Product" class="btn btn-discover">DISCOVER OUR PRODUCTS</a>
                     </div>
                 </div>
             </div>
-        }
-    }
-    else
-    {
-        <div class="col-12">
-            <div class="alert alert-info">
-                No products available at the moment.
-            </div>
         </div>
-    }
+    </div>
+</div>
+
+<!-- Sleek Timeless Distinct Section -->
+<div class="tagline-section">
+    <div class="container">
+        <h2 class="tagline-text">Sleek. Timeless. Distinct.</h2>
+    </div>
+</div>
+
+<!-- Full Width Image Showcase -->
+<div class="container-fluid px-0">
+    <div class="row g-0">
+        <div class="col-md-6">
+            <img src="/images/secondImage.jpg" alt="Fashion Image" class="img-fluid full-width-image">
+        </div>
+        <div class="col-md-6">
+            <img src="/images/thirdImage.jpg" alt="Fashion Image" class="img-fluid full-width-image">
+        </div>
+    </div>
+</div>
+
+<!-- The Art of Dressing Well Section -->
+<div class="tagline-section">
+    <div class="container">
+        <h2 class="tagline-text">The Art of Dressing Well</h2>
+    </div>
+</div>
+
+<!-- The Finesse Experience Section -->
+<div class="finesse-experience-section">
+    <div class="video-container">
+        <video autoplay muted loop class="full-width-video">
+            <source src="/videos/fashion.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+        <div class="video-overlay">
+            <h1 class="video-text">FINESSE</h1>
+        </div>
+    </div>
+</div>
+
+<!-- Newsletter Section -->
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <h2 class="section-title">Join Our Community</h2>
+            <p class="lead mb-4">Subscribe to our newsletter for exclusive offers, new arrivals, and styling tips.</p>
+            <div class="input-group mb-3 mx-auto" style="max-width: 500px;">
+                <input type="email" class="form-control" placeholder="Your email address">
+                <button class="btn btn-dark" type="button">SUBSCRIBE</button>
+            </div>
+            <p class="small text-muted">By subscribing, you agree to our terms and privacy policy.</p>
+        </div>
+    </div>
 </div>

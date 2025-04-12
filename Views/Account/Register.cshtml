@@ -4,55 +4,169 @@
     ViewData["Title"] = "Register";
 }
 
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h2>Register</h2>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg">
+                <div class="card-header bg-white py-3">
+                    <h2 class="text-center mb-0">Create an Account</h2>
+                    <p class="text-center text-muted mb-0 mt-2">Join us for a premium shopping experience</p>
+                </div>
+                <div class="card-body p-4">
+                    @if (!ViewContext.ViewData.ModelState.IsValid)
+                    {
+                        <div class="alert alert-danger">
+                            <div asp-validation-summary="All" class="mb-0"></div>
+                        </div>
+                    }
+                    
+                    <form asp-action="Register" method="post">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="FirstName" class="form-label">First Name</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light">
+                                        <i class="fas fa-user"></i>
+                                    </span>
+                                    <input asp-for="FirstName" class="form-control" required>
+                                </div>
+                                <span asp-validation-for="FirstName" class="text-danger small"></span>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="LastName" class="form-label">Last Name</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light">
+                                        <i class="fas fa-user"></i>
+                                    </span>
+                                    <input asp-for="LastName" class="form-control" required>
+                                </div>
+                                <span asp-validation-for="LastName" class="text-danger small"></span>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label asp-for="Email" class="form-label">Email Address</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light">
+                                    <i class="fas fa-envelope"></i>
+                                </span>
+                                <input asp-for="Email" class="form-control" required>
+                            </div>
+                            <span asp-validation-for="Email" class="text-danger small"></span>
+                            <div class="form-text">We'll never share your email with anyone else.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label asp-for="Address" class="form-label">Shipping Address</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light">
+                                    <i class="fas fa-home"></i>
+                                </span>
+                                <textarea asp-for="Address" class="form-control" rows="2" required></textarea>
+                            </div>
+                            <span asp-validation-for="Address" class="text-danger small"></span>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label asp-for="Password" class="form-label">Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light">
+                                    <i class="fas fa-lock"></i>
+                                </span>
+                                <input asp-for="Password" class="form-control" type="password" id="password" required>
+                                <button class="btn btn-outline-secondary toggle-password" type="button" data-target="password">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <span asp-validation-for="Password" class="text-danger small"></span>
+                            <div class="form-text">Password should be at least 8 characters long.</div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="termsCheck" required>
+                                <label class="form-check-label" for="termsCheck">
+                                    I agree to the <a href="#" class="text-decoration-none">Terms & Conditions</a> and <a href="#" class="text-decoration-none">Privacy Policy</a>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <button type="submit" class="btn btn-primary w-100">Register</button>
+                        </div>
+                    </form>
+                    
+                    <div class="text-center mt-3">
+                        <p class="mb-0">Already have an account? <a asp-action="Login" class="text-decoration-none fw-bold">Login here</a></p>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <form asp-action="Register" method="post">
-                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                    
-                    <div class="mb-3">
-                        <label asp-for="FirstName" class="form-label">First Name</label>
-                        <input asp-for="FirstName" class="form-control" required>
-                        <span asp-validation-for="FirstName" class="text-danger"></span>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label asp-for="LastName" class="form-label">Last Name</label>
-                        <input asp-for="LastName" class="form-control" required>
-                        <span asp-validation-for="LastName" class="text-danger"></span>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label asp-for="Email" class="form-label">Email</label>
-                        <input asp-for="Email" class="form-control" required>
-                        <span asp-validation-for="Email" class="text-danger"></span>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label asp-for="Address" class="form-label">Address</label>
-                        <input asp-for="Address" class="form-control" required>
-                        <span asp-validation-for="Address" class="text-danger"></span>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label asp-for="Password" class="form-label">Password</label>
-                        <input asp-for="Password" class="form-control" type="password" required>
-                        <span asp-validation-for="Password" class="text-danger"></span>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <button type="submit" class="btn btn-primary">Register</button>
-                    </div>
-                    
-                    <div>
-                        <p>Already have an account? <a asp-action="Login">Login here</a></p>
-                    </div>
-                </form>
+            
+            <div class="mt-4 text-center">
+                <a href="/" class="text-decoration-none">
+                    <i class="fas fa-arrow-left me-2"></i> Back to Home
+                </a>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+    .btn-primary {
+        background-color: #b10000;
+        border-color: #b10000;
+    }
+    
+    .btn-primary:hover {
+        background-color: #900000;
+        border-color: #900000;
+    }
+    
+    .btn-primary:focus, .btn-primary:active {
+        background-color: #b10000 !important;
+        border-color: #b10000 !important;
+        box-shadow: 0 0 0 0.25rem rgba(177, 0, 0, 0.25) !important;
+    }
+    
+    a {
+        color: #b10000;
+    }
+    
+    a:hover {
+        color: #900000;
+    }
+    
+    .form-check-input:checked {
+        background-color: #b10000;
+        border-color: #b10000;
+    }
+</style>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Toggle password visibility
+            const toggleButton = document.querySelector('.toggle-password');
+            if (toggleButton) {
+                toggleButton.addEventListener('click', function() {
+                    const targetId = this.getAttribute('data-target');
+                    const passwordInput = document.getElementById(targetId);
+                    const icon = this.querySelector('i');
+                    
+                    if (passwordInput.type === 'password') {
+                        passwordInput.type = 'text';
+                        icon.classList.remove('fa-eye');
+                        icon.classList.add('fa-eye-slash');
+                    } else {
+                        passwordInput.type = 'password';
+                        icon.classList.remove('fa-eye-slash');
+                        icon.classList.add('fa-eye');
+                    }
+                });
+            }
+        });
+    </script>
+}
