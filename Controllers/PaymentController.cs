@@ -24,7 +24,7 @@ namespace ClothingWebApp.Controllers
         {
             var payments = await _context.Payments
                 .Include(p => p.Order)
-                .ThenInclude(o => o.Customer)
+                .ThenInclude(o => o!.Customer)  // Correct placement of ! before the dot
                 .ToListAsync();
                 
             return View(payments);
@@ -37,7 +37,7 @@ namespace ClothingWebApp.Controllers
         {
             var payment = await _context.Payments
                 .Include(p => p.Order)
-                .ThenInclude(o => o.Customer)
+                .ThenInclude(o => o!.Customer)  // Correct placement of ! before the dot
                 .FirstOrDefaultAsync(p => p.PaymentId == id);
                 
             if (payment == null)

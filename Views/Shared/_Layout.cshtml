@@ -23,7 +23,7 @@
                             <a class="nav-link @((ViewContext.RouteData.Values["controller"]?.ToString() ?? "") == "Home" && (ViewContext.RouteData.Values["action"]?.ToString() ?? "") == "Index" ? "active" : "")" href="/">HOME</a>
                         </li>
                         <li class="nav-item categories-item">
-                            <a class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Category" ? "active" : "")" href="/Category">
+                            <a class="nav-link @((ViewContext.RouteData.Values["controller"]?.ToString() ?? "") == "Category" ? "active" : "")" href="/Category">
                                 CATEGORIES
                             </a>
                             <div class="categories-menu">
@@ -39,7 +39,7 @@
                             </div>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Product" ? "active" : "")" href="/Product">PRODUCTS</a>
+                            <a class="nav-link @((ViewContext.RouteData.Values["controller"]?.ToString() ?? "") == "Product" ? "active" : "")" href="/Product">PRODUCTS</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="/">ABOUT US</a>

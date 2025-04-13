@@ -43,7 +43,8 @@ namespace ClothingWebApp.Controllers
         private async Task<List<CartProduct>> GetCartItemsAsync()
         {
             // Try to get from session first
-            string sessionJson = HttpContext.Session.GetString(CartSessionKey);
+            
+            string sessionJson = HttpContext.Session.GetString(CartSessionKey) ?? string.Empty;
             var cartItems = new List<CartProduct>();
             
             if (!string.IsNullOrEmpty(sessionJson))
@@ -65,7 +66,7 @@ namespace ClothingWebApp.Controllers
             }
             
             // If session failed or is empty, try to get from database
-            if (User.Identity.IsAuthenticated)
+            if (User.Identity != null && User.Identity.IsAuthenticated)
             {
                 try
                 {
@@ -129,7 +130,7 @@ namespace ClothingWebApp.Controllers
                 HttpContext.Session.SetString(CartSessionKey, json);
                 
                 // Save to database if user is authenticated
-                if (User.Identity.IsAuthenticated)
+                if (User.Identity != null && User.Identity.IsAuthenticated)
                 {
                     try
                     {
@@ -175,14 +176,14 @@ namespace ClothingWebApp.Controllers
             {
                 // Clear from session
                 HttpContext.Session.Remove(CartSessionKey);
-                
+
                 // If authenticated, also clear from database
-                if (User.Identity.IsAuthenticated)
+                if (User.Identity != null && User.Identity.IsAuthenticated)
                 {
-                    try 
+                    try
                     {
                         int userId = GetCurrentUserId();
-                        
+
                         var cart = await _context.Carts.FirstOrDefaultAsync(c => c.CustomerId == userId);
                         if (cart != null)
                         {
@@ -207,7 +208,7 @@ namespace ClothingWebApp.Controllers
         /// </summary>
         public async Task<IActionResult> Index()
         {
-            if (!User.Identity.IsAuthenticated)
+            if (User.Identity == null || !User.Identity.IsAuthenticated)
             {
                 TempData["InfoMessage"] = "Please log in or register to view your shopping cart.";
                 return RedirectToAction("Login", "Account", new { returnUrl = Url.Action("Index", "Cart") });
@@ -264,7 +265,7 @@ namespace ClothingWebApp.Controllers
         [HttpPost]
         public async Task<IActionResult> AddToCart(int productId, string selectedSize = "", string returnToProduct = "false")
         {
-            if (!User.Identity.IsAuthenticated)
+            if (User.Identity == null || !User.Identity.IsAuthenticated)
             {
                 TempData["InfoMessage"] = "Please log in or register to add items to your shopping cart.";
                 return RedirectToAction("Login", "Account", new { returnUrl = Url.Action("Details", "Product", new { id = productId }) });
@@ -357,7 +358,7 @@ namespace ClothingWebApp.Controllers
         [HttpPost]
         public async Task<IActionResult> UpdateQuantity(int productId, int quantity)
         {
-            if (!User.Identity.IsAuthenticated)
+            if (User?.Identity == null || !User.Identity.IsAuthenticated)
             {
                 return RedirectToAction("Login", "Account");
             }
@@ -399,7 +400,7 @@ namespace ClothingWebApp.Controllers
         [HttpPost]
         public async Task<IActionResult> UpdateSize(int productId, string currentSize, string newSize)
         {
-            if (!User.Identity.IsAuthenticated)
+            if (User?.Identity == null || !User.Identity.IsAuthenticated)
             {
                 return RedirectToAction("Login", "Account");
             }
@@ -442,7 +443,7 @@ namespace ClothingWebApp.Controllers
         [HttpPost]
         public async Task<IActionResult> RemoveFromCart(int productId)
         {
-            if (!User.Identity.IsAuthenticated)
+            if (User?.Identity == null || !User.Identity.IsAuthenticated)
             {
                 return RedirectToAction("Login", "Account");
             }
@@ -481,7 +482,7 @@ namespace ClothingWebApp.Controllers
         /// </summary>
         public async Task<IActionResult> Checkout()
         {
-            if (!User.Identity.IsAuthenticated)
+            if (User.Identity == null || !User.Identity.IsAuthenticated)
             {
                 TempData["InfoMessage"] = "Please log in or register to complete your purchase.";
                 return RedirectToAction("Login", "Account", new { returnUrl = Url.Action("Checkout", "Cart") });
@@ -552,7 +553,7 @@ namespace ClothingWebApp.Controllers
         [HttpPost]
         public async Task<IActionResult> PlaceOrder(string paymentMethod, string cardNumber = "", string cardName = "", string expiryDate = "", string cvv = "")
         {
-            if (!User.Identity.IsAuthenticated)
+            if (User.Identity == null || !User.Identity.IsAuthenticated)
             {
                 return RedirectToAction("Login", "Account");
             }
@@ -596,7 +597,9 @@ namespace ClothingWebApp.Controllers
                 }
                 
                 // Calculate total amount
-                decimal totalAmount = validCartItems.Sum(item => item.Product.Price * item.Quantity);
+                decimal totalAmount = validCartItems
+                    .Where(item => item.Product != null)
+                    .Sum(item => (item.Product?.Price ?? 0) * item.Quantity);
                 
                 // Begin transaction
                 using (var transaction = await _context.Database.BeginTransactionAsync())
@@ -652,7 +655,7 @@ namespace ClothingWebApp.Controllers
         /// </summary>
         public async Task<IActionResult> OrderConfirmation(int orderId)
         {
-            if (!User.Identity.IsAuthenticated)
+            if (User.Identity == null || !User.Identity.IsAuthenticated)
             {
                 return RedirectToAction("Login", "Account");
             }

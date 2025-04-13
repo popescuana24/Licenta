@@ -35,6 +35,12 @@
                     }
                 </div>
             </div>
+            <!-- Style Assistant Button -->
+            <div class="mt-3">
+                <button id="styleAssistantBtn" class="btn w-100" style="background-color: #333; color: white;">
+                    Get Styling Help
+                </button>
+            </div>
         </div>
         
         <!-- Product Info -->
@@ -81,9 +87,322 @@
     </div>
 </div>
 
+<!-- Style Assistant Chat Interface -->
+<div id="chatInterface" class="chat-container" style="display: none;">
+    <div class="chat-header">
+        <h3>Style Assistant</h3>
+        <button class="close-btn" id="closeChat">×</button>
+    </div>
+    
+    <div class="chat-messages" id="chatMessages">
+        <!-- Messages will appear here -->
+    </div>
+    
+    <div class="chat-input">
+        <input type="text" id="userInput" placeholder="Ask about styling this item...">
+        <button id="sendButton">Send</button>
+    </div>
+</div>
+
+<style>
+    /* Existing styles */
+    .size-selector {
+        gap: 10px;
+    }
+    
+    .size-option {
+        width: 40px;
+        height: 40px;
+        border: 1px solid #dee2e6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+    
+    .size-option.active {
+        border: 2px solid #b10000;
+        font-weight: bold;
+    }
+    
+    .thumbnail-item {
+        width: 80px;
+        height: 80px;
+        border: 1px solid #dee2e6;
+        overflow: hidden;
+        cursor: pointer;
+    }
+    
+    .thumbnail-item.active {
+        border: 2px solid #b10000;
+    }
+    
+    .thumbnail-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    /* Improved Style Assistant Chat Styles */
+    .chat-container {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 350px;
+        height: 500px;
+        background-color: white;
+        border-radius: 12px;
+        box-shadow: 0 5px 25px rgba(0,0,0,0.25);
+        display: flex;
+        flex-direction: column;
+        z-index: 1000;
+        overflow: hidden;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    }
+
+    .chat-header {
+        padding: 15px;
+        background-color: #333;
+        border-top-left-radius: 12px;
+        border-top-right-radius: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid rgba(0,0,0,0.1);
+    }
+
+    .chat-header h3 {
+        margin: 0;
+        font-size: 18px;
+        color: white;
+        font-weight: 500;
+    }
+
+    .close-btn {
+        background: none;
+        border: none;
+        font-size: 22px;
+        cursor: pointer;
+        color: white;
+        opacity: 0.8;
+        transition: opacity 0.2s;
+    }
+    
+    .close-btn:hover {
+        opacity: 1;
+    }
+
+    .chat-messages {
+        flex-grow: 1;
+        padding: 15px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        background-color: #f9f9f9;
+        gap: 12px;
+    }
+
+    .message {
+        position: relative;
+        margin-bottom: 0;
+        max-width: 85%;
+        border-radius: 18px;
+        padding: 10px 15px;
+        line-height: 1.4;
+        font-size: 14px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+
+    .user-message {
+        align-self: flex-end;
+        background-color: #1a8cff;
+        color: white;
+        border-bottom-right-radius: 4px;
+    }
+
+    .bot-message {
+        align-self: flex-start;
+        background-color: white;
+        color: #333;
+        border-bottom-left-radius: 4px;
+    }
+
+    .chat-input {
+        display: flex;
+        padding: 12px;
+        border-top: 1px solid rgba(0,0,0,0.1);
+        background-color: white;
+    }
+
+    .chat-input input {
+        flex-grow: 1;
+        padding: 10px 15px;
+        border: 1px solid #ddd;
+        border-radius: 24px;
+        margin-right: 10px;
+        font-size: 14px;
+        outline: none;
+        transition: border-color 0.2s;
+    }
+    
+    .chat-input input:focus {
+        border-color: #1a8cff;
+    }
+
+    .chat-input button {
+        background-color: #1a8cff;
+        color: white;
+        border: none;
+        border-radius: 24px;
+        padding: 8px 16px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: background-color 0.2s;
+    }
+    
+    .chat-input button:hover {
+        background-color: #0066cc;
+    }
+
+    .typing-indicator {
+        align-self: flex-start;
+        background-color: white;
+        color: #777;
+        border-radius: 18px;
+        padding: 10px 15px;
+        font-size: 14px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        display: flex;
+        align-items: center;
+    }
+    
+    .typing-indicator::after {
+        content: "...";
+        animation: typing 1.5s infinite;
+        width: 20px;
+        text-align: left;
+    }
+    
+    @@keyframes typing {
+        0% { content: "."; }
+        33% { content: ".."; }
+        66% { content: "..."; }
+    }
+
+    .recommended-products {
+        width: 100%;
+        margin: 15px 0;
+        background-color: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .product-category {
+        margin-bottom: 15px;
+    }
+
+    .product-category h4 {
+        font-size: 14px;
+        margin: 12px 10px 8px;
+        color: #333;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .products-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        padding: 0 10px 10px;
+    }
+
+    .product-card {
+        border: 1px solid #eee;
+        border-radius: 8px;
+        overflow: hidden;
+        background-color: white;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .product-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .product-card img {
+        width: 100%;
+        height: 100px;
+        object-fit: cover;
+    }
+
+    .product-card h5 {
+        font-size: 12px;
+        margin: 8px 8px 4px;
+        color: #333;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .product-card p {
+        font-size: 11px;
+        margin: 0 8px 6px;
+        color: #777;
+    }
+
+    .add-to-cart-btn {
+        width: 100%;
+        background-color: #28a745;
+        color: white;
+        border: none;
+        padding: 7px 0;
+        font-size: 11px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .add-to-cart-btn:hover {
+        background-color: #218838;
+    }
+    
+    /* Quick response buttons */
+    .quick-responses {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 10px 0;
+        align-self: center;
+        width: 100%;
+    }
+
+    .quick-response-button {
+        background-color: white;
+        border: 1px solid #ddd;
+        border-radius: 16px;
+        padding: 8px 12px;
+        font-size: 14px;
+        color: #1a8cff;
+        cursor: pointer;
+        transition: background-color 0.2s, border-color 0.2s;
+        flex: 1;
+        min-width: 120px;
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    .quick-response-button:hover {
+        background-color: #f0f7ff;
+        border-color: #1a8cff;
+    }
+</style>
+
 @section Scripts {
     <script>
-        // Make sure to select a size by default
+        // Size selection functionality
         document.addEventListener('DOMContentLoaded', function() {
             const sizeOptions = document.querySelectorAll('.size-option');
             if (sizeOptions.length > 0) {
@@ -130,5 +449,289 @@
             });
             thumbnail.classList.add('active');
         }
-    </script>
+        
+        // Style Assistant Chat Functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const productId = @Model.ProductId;
+            const styleAssistantBtn = document.getElementById('styleAssistantBtn');
+            const chatInterface = document.getElementById('chatInterface');
+            const closeChat = document.getElementById('closeChat');
+            const chatMessages = document.getElementById('chatMessages');
+            const userInput = document.getElementById('userInput');
+            const sendButton = document.getElementById('sendButton');
+            
+            // Open chat when styling button is clicked
+            styleAssistantBtn.addEventListener('click', function() {
+                chatInterface.style.display = 'flex';
+                
+                // Only add welcome message if it's not already there
+                if (chatMessages.children.length === 0) {
+                    // Add initial welcome message
+                    addMessage('bot', `Hi there! I can help you find items that go perfectly with this ${@Json.Serialize(Model.Name)}. What would you like to know?`);
+                    
+                    // Add quick response buttons
+                    addQuickResponseButtons();
+                }
+                
+                // Focus on input
+                userInput.focus();
+            });
+            
+            // Close chat
+            closeChat.addEventListener('click', function() {
+                chatInterface.style
+                chatInterface.style.display = 'none';
+           });
+           
+           // Send user message
+           sendButton.addEventListener('click', sendUserMessage);
+           userInput.addEventListener('keypress', function(e) {
+               if (e.key === 'Enter') {
+                   sendUserMessage();
+               }
+           });
+           
+           function sendUserMessage() {
+               const message = userInput.value.trim();
+               if (message) {
+                   addMessage('user', message);
+                   userInput.value = '';
+                   
+                   // Show typing indicator
+                   const typingIndicator = document.createElement('div');
+                   typingIndicator.className = 'typing-indicator';
+                   typingIndicator.textContent = 'Thinking';
+                   chatMessages.appendChild(typingIndicator);
+                   
+                   // Scroll to bottom
+                   chatMessages.scrollTop = chatMessages.scrollHeight;
+                   
+                   // Send to backend
+                   fetch('/api/StyleAssistant/chat', {
+                       method: 'POST',
+                       headers: {
+                           'Content-Type': 'application/json'
+                       },
+                       body: JSON.stringify({
+                           productId: productId,
+                           userMessage: message
+                       })
+                   })
+                   .then(response => response.json())
+                   .then(data => {
+                       // Remove typing indicator
+                       chatMessages.removeChild(typingIndicator);
+                       
+                       // Add bot response
+                       addMessage('bot', data.message);
+                       
+                       // Display recommended products if any
+                       if (data.recommendedProducts && data.recommendedProducts.length > 0) {
+                           displayRecommendedProducts(data.recommendedProducts);
+                       }
+                   })
+                   .catch(error => {
+                       console.error('Error:', error);
+                       chatMessages.removeChild(typingIndicator);
+                       addMessage('bot', 'Sorry, I encountered an error while processing your request.');
+                   });
+               }
+           }
+           
+           function getRecommendations() {
+               // Use more general language
+               addMessage('user', "Show me what would go well with this");
+               
+               // Show typing indicator
+               const typingIndicator = document.createElement('div');
+               typingIndicator.className = 'typing-indicator';
+               typingIndicator.textContent = 'Finding perfect matches';
+               chatMessages.appendChild(typingIndicator);
+               
+               // Scroll to bottom
+               chatMessages.scrollTop = chatMessages.scrollHeight;
+               
+               fetch('/api/StyleAssistant/recommendations', {
+                   method: 'POST',
+                   headers: {
+                       'Content-Type': 'application/json'
+                   },
+                   body: JSON.stringify({
+                       productId: productId
+                   })
+               })
+               .then(response => response.json())
+               .then(data => {
+                   // Remove typing indicator
+                   chatMessages.removeChild(typingIndicator);
+                   
+                   // Add bot response
+                   addMessage('bot', data.message);
+                   
+                   // Display recommended products
+                   if (data.recommendedProducts && data.recommendedProducts.length > 0) {
+                       displayRecommendedProducts(data.recommendedProducts);
+                   } else {
+                       addMessage('bot', 'I couldn\'t find any matching products at the moment. Is there something specific you\'d like to know?');
+                   }
+               })
+               .catch(error => {
+                   console.error('Error:', error);
+                   chatMessages.removeChild(typingIndicator);
+                   addMessage('bot', 'Sorry, I encountered an error while finding matching items.');
+               });
+           }
+           
+           function addQuickResponseButtons() {
+               const quickResponses = document.createElement('div');
+               quickResponses.className = 'quick-responses';
+               
+               const suggestButton = document.createElement('button');
+               suggestButton.className = 'quick-response-button';
+               suggestButton.textContent = "Show matching items";
+               suggestButton.onclick = function() {
+                   getRecommendations();
+               };
+               
+               const adviceButton = document.createElement('button');
+               adviceButton.className = 'quick-response-button';
+               adviceButton.textContent = "Styling advice";
+               adviceButton.onclick = function() {
+                   addMessage('user', "How should I style this item?");
+                   
+                   // Show typing indicator
+                   const typingIndicator = document.createElement('div');
+                   typingIndicator.className = 'typing-indicator';
+                   typingIndicator.textContent = 'Thinking';
+                   chatMessages.appendChild(typingIndicator);
+                   
+                   // Scroll to bottom
+                   chatMessages.scrollTop = chatMessages.scrollHeight;
+                   
+                   // Send to backend
+                   fetch('/api/StyleAssistant/chat', {
+                       method: 'POST',
+                       headers: {
+                           'Content-Type': 'application/json'
+                       },
+                       body: JSON.stringify({
+                           productId: productId,
+                           userMessage: "How should I style this item?"
+                       })
+                   })
+                   .then(response => response.json())
+                   .then(data => {
+                       // Remove typing indicator
+                       chatMessages.removeChild(typingIndicator);
+                       
+                       // Add bot response
+                       addMessage('bot', data.message);
+                       
+                       // Display recommended products if any
+                       if (data.recommendedProducts && data.recommendedProducts.length > 0) {
+                           displayRecommendedProducts(data.recommendedProducts);
+                       }
+                   })
+                   .catch(error => {
+                       console.error('Error:', error);
+                       chatMessages.removeChild(typingIndicator);
+                       addMessage('bot', 'Sorry, I encountered an error while processing your request.');
+                   });
+               };
+               
+               quickResponses.appendChild(suggestButton);
+               quickResponses.appendChild(adviceButton);
+               chatMessages.appendChild(quickResponses);
+           }
+           
+           function addMessage(sender, message) {
+    // Check if it's a bot message with product IDs
+    if (sender === 'bot' && message.includes('ID:')) {
+        // Extract any conversational part before the product recommendations
+        let introText = "";
+        
+        if (message.includes('Product recommendations:')) {
+            introText = message.split('Product recommendations:')[0].trim();
+        } else if (message.includes('Here are some recommendations')) {
+            introText = "Here are some items that would go well with this:";
+        }
+        
+        // If we have an intro text, show it
+        if (introText && !introText.includes('ID:')) {
+            const messageElement = document.createElement('div');
+            messageElement.className = `message ${sender}-message`;
+            messageElement.innerHTML = `<p>${introText}</p>`;
+            chatMessages.appendChild(messageElement);
+        }
+        
+        // Don't add the raw message with IDs - the products will be displayed separately
+    } else {
+        // Regular message handling for messages without product IDs
+        const messageElement = document.createElement('div');
+        messageElement.className = `message ${sender}-message`;
+        
+        // Replace newlines with <br> tags
+        const formattedMessage = message.replace(/\n/g, '<br>');
+        
+        messageElement.innerHTML = `<p>${formattedMessage}</p>`;
+        chatMessages.appendChild(messageElement);
+    }
+    
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+           
+           function displayRecommendedProducts(products) {
+    // Group products by category
+    const productsByCategory = {};
+    products.forEach(product => {
+        const categoryName = product.categoryName || 'Other';
+        if (!productsByCategory[categoryName]) {
+            productsByCategory[categoryName] = [];
+        }
+        productsByCategory[categoryName].push(product);
+    });
+    
+    // Create a container for recommended products
+    const productsContainer = document.createElement('div');
+    productsContainer.className = 'recommended-products';
+    
+    // Create HTML for each category
+    for (const category in productsByCategory) {
+        const categoryProducts = productsByCategory[category];
+        
+        const categorySection = document.createElement('div');
+        categorySection.className = 'product-category';
+        categorySection.innerHTML = `<h4>${category}:</h4>`;
+        
+        const productsGrid = document.createElement('div');
+        productsGrid.className = 'products-grid';
+        
+        categoryProducts.forEach(product => {
+            const productCard = document.createElement('div');
+            productCard.className = 'product-card';
+            productCard.innerHTML = `
+                <a href="/Product/Details/${product.productId}" class="product-link">
+                    <img src="${product.imageUrl}" alt="${product.name}" onerror="this.src='/images/products/no-image.jpg'">
+                    <h5>${product.name}</h5>
+                    <p>${product.color} - ${product.price.toFixed(2)} LEI</p>
+                </a>
+                <form action="/Cart/AddToCart" method="post">
+                    <input type="hidden" name="productId" value="${product.productId}">
+                    <input type="hidden" name="returnToProduct" value="false">
+                    <button type="submit" class="add-to-cart-btn">Add to Cart</button>
+                </form>
+            `;
+            productsGrid.appendChild(productCard);
+        });
+        
+        categorySection.appendChild(productsGrid);
+        productsContainer.appendChild(categorySection);
+    }
+    
+    // Add to chat messages
+    chatMessages.appendChild(productsContainer);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+       });
+   </script>
 }

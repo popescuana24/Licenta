@@ -285,7 +285,7 @@ namespace ClothingWebApp.Controllers
         /// </summary>
         public async Task<IActionResult> OrderHistory()
         {
-            if (!User.Identity.IsAuthenticated)
+            if (User.Identity == null || !User.Identity.IsAuthenticated)
             {
                 return RedirectToAction("Login");
             }
@@ -314,7 +314,7 @@ namespace ClothingWebApp.Controllers
         /// </summary>
         public async Task<IActionResult> OrderDetails(int id)
         {
-            if (!User.Identity.IsAuthenticated)
+            if (User.Identity == null || !User.Identity.IsAuthenticated)
             {
                 return RedirectToAction("Login");
             }

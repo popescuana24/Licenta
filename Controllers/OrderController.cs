@@ -56,10 +56,10 @@ namespace ClothingWebApp.Controllers
         /// <summary>
         /// Shows user's order history
         /// </summary>
-        public async Task<IActionResult> History()
+        public Task<IActionResult> History()
         {
             // Redirect to Account controller's OrderHistory
-            return RedirectToAction("OrderHistory", "Account");
+            return Task.FromResult<IActionResult>(RedirectToAction("OrderHistory", "Account"));
         }
     }
 }
