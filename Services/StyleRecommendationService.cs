@@ -73,7 +73,7 @@ namespace ClothingWebApp.Services
             var matchingProducts = await FindMatchingProductsInDatabase(selectedColor, aiColors, compatibleCategories, productId);
             
             // Randomize and limit results
-            var finalProducts = RandomizeAndLimit(matchingProducts, 12);
+            var finalProducts = RandomizeAndLimit(matchingProducts, 8);
             
             var message = string.IsNullOrEmpty(categoryFilter)
                 ? $"Here are items that would go perfectly with your {selectedColor} {selectedProduct.Name}:"
