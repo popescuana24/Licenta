@@ -5,9 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ClothingWebApp.Controllers
 {
-    /// <summary>
-    /// Handles payment management (admin functionality)
-    /// </summary>
     public class PaymentController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -16,28 +13,23 @@ namespace ClothingWebApp.Controllers
         {
             _context = context;
         }
-        
-        /// <summary>
-        /// Shows all payments (admin view)
-        /// </summary>
+        //all payments
         public async Task<IActionResult> Index()
         {
             var payments = await _context.Payments
                 .Include(p => p.Order)
-                .ThenInclude(o => o!.Customer)  // Correct placement of ! before the dot
+                .ThenInclude(o => o!.Customer)  
                 .ToListAsync();
                 
             return View(payments);
         }
         
-        /// <summary>
-        /// Shows details for a specific payment
-        /// </summary>
+        // Shows details for a specific payment
         public async Task<IActionResult> Details(int id)
         {
             var payment = await _context.Payments
                 .Include(p => p.Order)
-                .ThenInclude(o => o!.Customer)  // Correct placement of ! before the dot
+                .ThenInclude(o => o!.Customer)  
                 .FirstOrDefaultAsync(p => p.PaymentId == id);
                 
             if (payment == null)

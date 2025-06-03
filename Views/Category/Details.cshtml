@@ -15,8 +15,18 @@
                 <div class="col-md-3 mb-4">
                     <div class="product-card">
                         <a href="@Url.Action("Details", "Product", new { id = product.ProductId })">
-                            <img src="@product.ImageUrl" class="img-fluid" alt="@product.Name" 
-                                 onerror="this.src='/images/products/no-image.jpg'">
+                            <div class="product-image-container">
+                                @{
+                                    
+                                    string displayUrl = product.ImageUrl;
+                                    if (!string.IsNullOrEmpty(displayUrl) && !displayUrl.Contains("_img_0") && !displayUrl.Contains("_img_1"))
+                                    {
+                                        displayUrl = displayUrl + "_img_0";
+                                    }
+                                }
+                                <img src="@displayUrl" class="img-fluid" alt="@product.Name" 
+                                     onerror="this.onerror=null; this.src='/images/products/no-image.jpg';">
+                            </div>
                         </a>
                         <div class="product-info">
                             <div class="product-catalog-name">@product.Name</div>
@@ -34,3 +44,56 @@
         </div>
     }
 </div>
+
+<style>
+    .product-card {
+        margin-bottom: 25px;
+        border: 1px solid #eee;
+        border-radius: 8px;
+        height: 100%;
+    }
+
+    .product-card a {
+        display: block;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .product-image-container {
+        position: relative;
+        width: 100%;
+        padding-bottom: 100%; 
+        background-color: #f9f9f9;
+        overflow: hidden;
+    }
+
+    .product-image-container img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .product-info {
+        padding: 15px;
+        background-color: white;
+    }
+
+    .product-catalog-name {
+        font-size: 14px;
+        font-weight: 500;
+        margin-bottom: 5px;
+        text-transform: uppercase;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .product-catalog-price {
+        font-size: 16px;
+        font-weight: 600;
+        color: #b10000;
+    }
+</style>

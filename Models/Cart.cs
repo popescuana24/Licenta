@@ -2,34 +2,26 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ClothingWebApp.Models
 {
-    /// <summary>
-    /// Represents a customer's shopping cart in the database
-    /// </summary>
+    
     public class Cart
     {
-        /// <summary>
-        /// Primary key for the cart
-        /// </summary>
+        
+        // this is the primary key
         public int CartId { get; set; }
         
-        /// <summary>
-        /// Foreign key to the Customer table
-        /// </summary>
+        // Foreign key to the Customer table
         public int CustomerId { get; set; }
         
-        /// <summary>
-        /// JSON string representation of cart items to avoid complex many-to-many relationship
-        /// </summary>
+       
+        /// JSON string of CART ITEMS
         public string CartItemsJson { get; set; } = string.Empty;
         
-        /// <summary>
-        /// Navigation property to the associated Customer
-        /// </summary>
+      
+        //Navigation property to the associated Customer
         public Customer? Customer { get; set; }
         
-        /// <summary>
-        /// Deserialized collection of cart items, not stored in the database
-        /// </summary>
+      
+        /// Deserialized colle ction of cart items, not stored in the database
         [NotMapped]
         public List<CartProduct> CartItems { get; set; } = new List<CartProduct>();
     }

@@ -4,22 +4,22 @@
 
 <div class="container mt-5">
     <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card shadow-lg">
-                <div class="card-header bg-white py-3">
-                    <h2 class="text-center mb-0">Welcome Back</h2>
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white p-3">
+                    <h2 class="text-center h4 mb-0">Welcome Back</h2>
                 </div>
                 <div class="card-body p-4">
                     @if (TempData["SuccessMessage"] != null)
                     {
-                        <div class="alert alert-success">
+                        <div class="alert alert-success py-2">
                             @TempData["SuccessMessage"]
                         </div>
                     }
                     
                     @if (!ViewContext.ViewData.ModelState.IsValid)
                     {
-                        <div class="alert alert-danger">
+                        <div class="alert alert-danger py-2">
                             <div asp-validation-summary="All" class="mb-0"></div>
                         </div>
                     }
@@ -27,7 +27,7 @@
                     <form asp-action="Login" method="post">
                         <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
                         
-                        <div class="mb-4">
+                        <div class="mb-3">
                             <label for="email" class="form-label">Email Address</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light">
@@ -37,12 +37,11 @@
                             </div>
                         </div>
                         
-                        <div class="mb-4">
-                            <div class="d-flex justify-content-between">
-                                <label for="password" class="form-label">Password</label>
-                                <a href="#" class="small text-decoration-none">Forgot password?</a>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <label for="password" class="form-label mb-0">Password</label>
                             </div>
-                            <div class="input-group">
+                            <div class="input-group mt-1">
                                 <span class="input-group-text bg-light">
                                     <i class="fas fa-lock"></i>
                                 </span>
@@ -53,22 +52,19 @@
                             </div>
                         </div>
                         
-                        <div class="mb-4">
+                        <div class="mt-4 mb-3">
                             <button type="submit" class="btn btn-primary w-100">
                                 <i class="fas fa-sign-in-alt me-2"></i> Login
                             </button>
                         </div>
                     </form>
-                    
-                    <div class="text-center">
-                        <p class="mb-0">Don't have an account? <a asp-action="Register" class="text-decoration-none fw-bold">Register here</a></p>
-                    </div>
+                
                 </div>
             </div>
             
-            <div class="mt-4 text-center">
-                <a href="/" class="text-decoration-none">
-                    <i class="fas fa-arrow-left me-2"></i> Back to Home
+            <div class="mt-3 text-center">
+                <a href="/" class="text-decoration-none small">
+                    <i class="fas fa-arrow-left me-1"></i> Back to Home
                 </a>
             </div>
         </div>
@@ -86,12 +82,6 @@
         border-color: #900000;
     }
     
-    .btn-primary:focus, .btn-primary:active {
-        background-color: #b10000 !important;
-        border-color: #b10000 !important;
-        box-shadow: 0 0 0 0.25rem rgba(177, 0, 0, 0.25) !important;
-    }
-    
     a {
         color: #b10000;
     }
@@ -99,28 +89,26 @@
     a:hover {
         color: #900000;
     }
+    
+    @@media (max-width: 576px) {
+        .card-body {
+            padding: 1rem;
+        }
+    }
 </style>
 
 @section Scripts {
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Toggle password visibility
             const toggleButton = document.querySelector('.toggle-password');
             if (toggleButton) {
                 toggleButton.addEventListener('click', function() {
-                    const targetId = this.getAttribute('data-target');
-                    const passwordInput = document.getElementById(targetId);
+                    const passwordInput = document.getElementById(this.getAttribute('data-target'));
                     const icon = this.querySelector('i');
                     
-                    if (passwordInput.type === 'password') {
-                        passwordInput.type = 'text';
-                        icon.classList.remove('fa-eye');
-                        icon.classList.add('fa-eye-slash');
-                    } else {
-                        passwordInput.type = 'password';
-                        icon.classList.remove('fa-eye-slash');
-                        icon.classList.add('fa-eye');
-                    }
+                    passwordInput.type = passwordInput.type === 'password' ? 'text' : 'password';
+                    icon.classList.toggle('fa-eye');
+                    icon.classList.toggle('fa-eye-slash');
                 });
             }
         });

@@ -1,447 +1,360 @@
 @model ClothingWebApp.Models.Product
 @{
     ViewData["Title"] = Model.Name;
+    
+    
+    var sizeOptions = new List<string>();
+    bool showSizeSelector = true;
+    
+    if (Model.Category != null)
+    {
+        if (Model.Category.Name == "Bags")
+        {
+         
+            showSizeSelector = false;
+        }
+        else if (Model.Category.Name == "Shoes")
+        {
+            
+            sizeOptions = new List<string> { "36", "37", "38", "39", "40", "41", "42", "43", "44" };
+        }
+        else
+        {
+          
+            sizeOptions = new List<string> { "XS", "S", "M", "L", "XL", "XXL" };
+        }
+    }
+    else
+    {
+        sizeOptions = new List<string> { "XS", "S", "M", "L", "XL", "XXL" };
+    }
+    
+    var availableSizes = new List<string>();
+    if (!string.IsNullOrEmpty(Model.Size))
+    {
+        availableSizes = Model.Size.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                  .Select(s => s.Trim())
+                                  .ToList();
+    }
+    
+    // If no sizes are specified in the product, use the category-based options
+    if (availableSizes.Count == 0)
+    {
+        availableSizes = sizeOptions;
+    }
+    
+    // Set viewbag values for the style assistant
+    ViewBag.ProductName = Model.Name;
+    ViewBag.CategoryName = Model.Category?.Name ?? "Clothing";
 }
 
 <div class="container mt-5">
     <div class="row">
-        <!-- Product Images -->
+        <!-- Product Images - Left Column -->
         <div class="col-md-6 mb-4">
             <div class="product-gallery">
+                <!-- Main image container -->
                 <div class="main-image-container mb-3">
                     <img id="main-product-image" src="@Model.ImageUrl" alt="@Model.Name" class="img-fluid product-image" 
-                         onerror="this.src='/images/products/no-image.jpg'">
+                         onerror="this.onerror=null; this.src='/images/products/no-image.jpg';">
                 </div>
+                
+                <!-- Thumbnails -->
                 <div class="thumbnails d-flex">
                     @{
-                        // Main image
+                        // Main image thumbnail
                         <div class="thumbnail-item me-3 active" onclick="changeMainImage(this, '@Model.ImageUrl')">
                             <img src="@Model.ImageUrl" alt="@Model.Name" class="img-fluid"
-                                 onerror="this.src='/images/products/no-image.jpg'">
+                                 onerror="this.onerror=null; this.src='/images/products/no-image.jpg';">
                         </div>
                         
-                        // Use consistent naming convention for second image
-                        string imageFileName = System.IO.Path.GetFileName(Model.ImageUrl);
-                        string imageFolderPath = Model.ImageUrl.Substring(0, Model.ImageUrl.Length - imageFileName.Length);
-                        string imageNameWithoutExt = System.IO.Path.GetFileNameWithoutExtension(imageFileName);
-                        string imageExt = System.IO.Path.GetExtension(imageFileName);
-                        string secondImageName = imageNameWithoutExt + "_2" + imageExt;  // Using _2 suffix
-                        string secondImage = imageFolderPath + secondImageName;
+                        // Create alternative image path using the correct pattern: replace _img_0 with _img_1
+                        string altImageUrl = "";
+                        if (Model.ImageUrl.Contains("_img_0"))
+                        {
+                            altImageUrl = Model.ImageUrl.Replace("_img_0", "_img_1");
+                        }
                         
-                        <div class="thumbnail-item me-3" onclick="changeMainImage(this, '@secondImage')">
-                            <img src="@secondImage" alt="@Model.Name - Alternate View" class="img-fluid"
-                                 onerror="this.src='/images/products/no-image.jpg'">
+                        <div class="thumbnail-item me-3" id="alt-thumbnail" onclick="changeMainImage(this, '@altImageUrl')">
+                            <img src="@altImageUrl" alt="@Model.Name - Alternate View" class="img-fluid"
+                                 onerror="this.parentElement.style.display='none';">
                         </div>
                     }
                 </div>
             </div>
-            <!-- Style Assistant Button -->
-            <div class="mt-3">
-                <button id="styleAssistantBtn" class="btn w-100" style="background-color: #333; color: white;">
-                    Get Styling Help
-                </button>
-            </div>
         </div>
         
-        <!-- Product Info -->
+        <!-- Product Details - Right Column -->
         <div class="col-md-6">
-            <h1 class="product-title mb-2">@Model.Name</h1>
-            <p class="text-muted mb-2">@Model.Category.Name</p>
-            <h2 class="product-detail-price mb-4">@Model.Price.ToString("0.00") LEI</h2>
-            
-            <p class="mb-3">Color: <span class="fw-bold">@Model.Color</span></p>
-            
-            @if (!Model.Category.Name.ToUpper().Contains("BAG"))
-            {
-                <div class="mb-4">
-                    <p class="mb-2">Size:</p>
-                    <div class="size-selector d-flex flex-wrap">
-                        @{
-                            var sizes = new List<string> { "XS", "S", "M", "L", "XL" };
-                            
-                            if (Model.Category.Name.ToUpper().Contains("SHOE"))
-                            {
-                                sizes = new List<string> { "36", "37", "38", "39", "40", "41", "42" };
-                            }
-                            
-                            foreach (var size in sizes)
-                            {
-                                <div class="size-option" onclick="selectSize(this, '@size')">@size</div>
-                            }
-                        }
-                    </div>
+            <div class="product-details">
+                <h1 class="product-title mb-3">@Model.Name</h1>
+                <p class="product-price mb-3">@Model.Price.ToString("0.00") LEI</p>
+                <p class="product-description mb-4">@Model.Description</p>
+                
+                <!-- Color information -->
+                <div class="product-color mb-4">
+                    <h5 class="mb-2">Color:</h5>
+                    <p class="mb-0">@Model.Color</p>
                 </div>
-            }
-            
-            <form asp-controller="Cart" asp-action="AddToCart" method="post" class="mb-4">
-                <input type="hidden" name="productId" value="@Model.ProductId" />
-                <input type="hidden" id="selectedSize" name="selectedSize" value="@(Model.Category.Name.ToUpper().Contains("BAG") ? "One Size" : "")" />
-                <button type="submit" class="btn w-100" id="addToCartBtn" style="background-color: #b10000; color: white;">ADD TO CART</button>
-            </form>
-            
-            <div class="product-description mt-4">
-                <h4>Product Details</h4>
-                <p>@Model.Description</p>
+                
+                <!-- Add to Cart Form -->
+                <form asp-controller="Cart" asp-action="AddToCart" method="post" class="mb-4" id="addToCartForm">
+                    <input type="hidden" name="productId" value="@Model.ProductId" />
+                    <input type="hidden" name="selectedSize" id="selectedSizeInput" value="@(showSizeSelector ? "" : "OneSize")" />
+                    
+                    <!-- Size Selector (only shown for products that need sizes) -->
+                    @if (showSizeSelector && availableSizes.Count > 0)
+                    {
+                        <div class="size-selection mb-4">
+                            <h5 class="mb-3">Select Size:</h5>
+                            <div class="size-options d-flex flex-wrap">
+                                @foreach (var size in availableSizes)
+                                {
+                                    @if (size.ToLower() == "one size" || size.ToLower() == "onesize")
+                                    {
+                                        <div class="size-option one-size-option me-2 mb-2" onclick="selectSize(this, '@size')" data-size="@size">
+                                            One Size
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="size-option me-2 mb-2" onclick="selectSize(this, '@size')" data-size="@size">
+                                            @size
+                                        </div>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    }
+                    
+                    <!-- Add to Cart Button -->
+                    <button type="submit" id="addToCartBtn" class="btn w-100" @(showSizeSelector ? "disabled" : "")>
+                        Add to Cart
+                    </button>
+                </form>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Style Assistant Chat Interface -->
-<div id="chatInterface" class="chat-container" style="display: none;">
-    <div class="chat-header">
-        <h3>Style Assistant</h3>
-        <button class="close-btn" id="closeChat">×</button>
-    </div>
-    
-    <div class="chat-messages" id="chatMessages">
-        <!-- Messages will appear here -->
-    </div>
-    
-    <div class="chat-input">
-        <input type="text" id="userInput" placeholder="Ask about styling this item...">
-        <button id="sendButton">Send</button>
-    </div>
-</div>
+@await Html.PartialAsync("_StyleAssistantPartial", Model.ProductId)
 
 <style>
-    /* Existing styles */
-    .size-selector {
+    /* Product Details Styling */
+    .product-title {
+        font-size: 24px;
+        font-weight: 600;
+    }
+    
+    .product-price {
+        font-size: 22px;
+        font-weight: 600;
+        color: #000;
+    }
+    
+    .product-description {
+        line-height: 1.6;
+        color: #555;
+    }
+    
+    /* Size Selector Styling */
+    .size-selection {
+        margin-bottom: 20px;
+    }
+    
+    .size-options {
+        display: flex;
         gap: 10px;
+        flex-wrap: wrap;
     }
     
     .size-option {
-        width: 40px;
-        height: 40px;
-        border: 1px solid #dee2e6;
         display: flex;
         align-items: center;
         justify-content: center;
+        width: 50px;
+        height: 50px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
         cursor: pointer;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+    
+    /* One Size option styling */
+    .one-size-option {
+        width: auto;
+        padding: 0 20px;
+    }
+    
+    .size-option:hover {
+        border-color: #000;
     }
     
     .size-option.active {
-        border: 2px solid #b10000;
-        font-weight: bold;
+        background-color: #000;
+        color: white;
+        border-color: #000;
+    }
+    
+    /* Button Styling */
+    #addToCartBtn {
+        background-color: #b00000;
+        border-color: #b00000;
+        color: white;
+        padding: 12px;
+        font-weight: 500;
+    }
+    
+    
+    #addToCartBtn:disabled {
+        background-color: #ddd;
+        border-color: #ddd;
+        color: #888;
+    }
+    
+    /* Product Gallery Styling */
+    .main-image-container {
+        border: 1px solid #eee;
+        padding: 10px;
+        border-radius: 4px;
+        max-width: 450px;
+        margin: 0 auto;
+    }
+    
+    #main-product-image {
+        max-width: 100%;
+        max-height: 450px;
+        object-fit: contain;
+        display: block;
+        margin: 0 auto;
+    }
+    
+    .thumbnails {
+        justify-content: center;
     }
     
     .thumbnail-item {
-        width: 80px;
-        height: 80px;
-        border: 1px solid #dee2e6;
-        overflow: hidden;
+        border: 1px solid #ddd;
+        padding: 3px;
         cursor: pointer;
+        width: 70px;
+        height: 70px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        transition: all 0.2s;
     }
     
     .thumbnail-item.active {
-        border: 2px solid #b10000;
+        border-color: #000;
     }
     
     .thumbnail-item img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
+        max-height: 100%;
+        object-fit: contain;
     }
     
-    /* Improved Style Assistant Chat Styles */
-    .chat-container {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        width: 350px;
-        height: 500px;
-        background-color: white;
-        border-radius: 12px;
-        box-shadow: 0 5px 25px rgba(0,0,0,0.25);
-        display: flex;
-        flex-direction: column;
-        z-index: 1000;
-        overflow: hidden;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    }
-
-    .chat-header {
-        padding: 15px;
-        background-color: #333;
-        border-top-left-radius: 12px;
-        border-top-right-radius: 12px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-bottom: 1px solid rgba(0,0,0,0.1);
-    }
-
-    .chat-header h3 {
-        margin: 0;
-        font-size: 18px;
-        color: white;
-        font-weight: 500;
-    }
-
-    .close-btn {
-        background: none;
-        border: none;
-        font-size: 22px;
-        cursor: pointer;
-        color: white;
-        opacity: 0.8;
-        transition: opacity 0.2s;
-    }
-    
-    .close-btn:hover {
-        opacity: 1;
-    }
-
-    .chat-messages {
-        flex-grow: 1;
-        padding: 15px;
-        overflow-y: auto;
-        display: flex;
-        flex-direction: column;
-        background-color: #f9f9f9;
-        gap: 12px;
-    }
-
-    .message {
-        position: relative;
-        margin-bottom: 0;
-        max-width: 85%;
-        border-radius: 18px;
-        padding: 10px 15px;
-        line-height: 1.4;
-        font-size: 14px;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-    }
-
-    .user-message {
-        align-self: flex-end;
-        background-color: #1a8cff;
-        color: white;
-        border-bottom-right-radius: 4px;
-    }
-
-    .bot-message {
-        align-self: flex-start;
-        background-color: white;
-        color: #333;
-        border-bottom-left-radius: 4px;
-    }
-
-    .chat-input {
-        display: flex;
-        padding: 12px;
-        border-top: 1px solid rgba(0,0,0,0.1);
-        background-color: white;
-    }
-
-    .chat-input input {
-        flex-grow: 1;
-        padding: 10px 15px;
-        border: 1px solid #ddd;
-        border-radius: 24px;
-        margin-right: 10px;
-        font-size: 14px;
-        outline: none;
-        transition: border-color 0.2s;
-    }
-    
-    .chat-input input:focus {
-        border-color: #1a8cff;
-    }
-
-    .chat-input button {
-        background-color: #1a8cff;
-        color: white;
-        border: none;
-        border-radius: 24px;
-        padding: 8px 16px;
-        cursor: pointer;
-        font-weight: 500;
-        transition: background-color 0.2s;
-    }
-    
-    .chat-input button:hover {
-        background-color: #0066cc;
-    }
-
-    .typing-indicator {
-        align-self: flex-start;
-        background-color: white;
-        color: #777;
-        border-radius: 18px;
-        padding: 10px 15px;
-        font-size: 14px;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-        display: flex;
-        align-items: center;
-    }
-    
-    .typing-indicator::after {
-        content: "...";
-        animation: typing 1.5s infinite;
-        width: 20px;
-        text-align: left;
-    }
-    
-    @@keyframes typing {
-        0% { content: "."; }
-        33% { content: ".."; }
-        66% { content: "..."; }
-    }
-
-    .recommended-products {
-        width: 100%;
-        margin: 15px 0;
-        background-color: white;
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-
-    .product-category {
-        margin-bottom: 15px;
-    }
-
-    .product-category h4 {
-        font-size: 14px;
-        margin: 12px 10px 8px;
-        color: #333;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .products-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
-        padding: 0 10px 10px;
-    }
-
-    .product-card {
-        border: 1px solid #eee;
-        border-radius: 8px;
-        overflow: hidden;
-        background-color: white;
-        transition: transform 0.2s, box-shadow 0.2s;
-    }
-    
-    .product-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-
-    .product-card img {
-        width: 100%;
-        height: 100px;
-        object-fit: cover;
-    }
-
-    .product-card h5 {
-        font-size: 12px;
-        margin: 8px 8px 4px;
-        color: #333;
-        font-weight: 500;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .product-card p {
-        font-size: 11px;
-        margin: 0 8px 6px;
-        color: #777;
-    }
-
-    .add-to-cart-btn {
-        width: 100%;
-        background-color: #28a745;
-        color: white;
-        border: none;
-        padding: 7px 0;
-        font-size: 11px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: background-color 0.2s;
-    }
-    
-    .add-to-cart-btn:hover {
-        background-color: #218838;
-    }
-    
-    /* Quick response buttons */
-    .quick-responses {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin: 10px 0;
-        align-self: center;
-        width: 100%;
-    }
-
-    .quick-response-button {
-        background-color: white;
-        border: 1px solid #ddd;
-        border-radius: 16px;
-        padding: 8px 12px;
-        font-size: 14px;
-        color: #1a8cff;
-        cursor: pointer;
-        transition: background-color 0.2s, border-color 0.2s;
-        flex: 1;
-        min-width: 120px;
-        text-align: center;
-        white-space: nowrap;
-    }
-
-    .quick-response-button:hover {
-        background-color: #f0f7ff;
-        border-color: #1a8cff;
+    /* Responsive adjustments */
+    @@media (max-width: 768px) {
+        .product-title {
+            font-size: 20px;
+        }
+        
+        .product-price {
+            font-size: 18px;
+        }
     }
 </style>
 
 @section Scripts {
     <script>
-        // Size selection functionality
         document.addEventListener('DOMContentLoaded', function() {
-            const sizeOptions = document.querySelectorAll('.size-option');
-            if (sizeOptions.length > 0) {
-                selectSize(sizeOptions[0], sizeOptions[0].textContent.trim());
+            console.log("DOM fully loaded - initializing product page");
+            
+            // Only handle size selection if the size selector is present
+            const sizeSelector = document.querySelector('.size-selection');
+            if (sizeSelector) {
+                const sizeOptions = document.querySelectorAll('.size-option');
+                console.log("Found " + sizeOptions.length + " size options");
+                
+                if (sizeOptions.length > 0) {
+                    // Check if there's already an active size
+                    const activeSize = document.querySelector('.size-option.active');
+                    if (!activeSize && sizeOptions.length > 0) {
+                        // If no size is active, select the first one
+                        console.log("No active size found, selecting first size: " + sizeOptions[0].getAttribute('data-size'));
+                        selectSize(sizeOptions[0], sizeOptions[0].getAttribute('data-size'));
+                    }
+                }
+            }
+            
+            // Check if the alternative thumbnail loaded correctly
+            const altThumbnail = document.getElementById('alt-thumbnail');
+            if (altThumbnail) {
+                const img = altThumbnail.querySelector('img');
+                img.onerror = function() {
+                    altThumbnail.style.display = 'none';
+                };
+            }
+            
+            // Add form submission handler
+            const addToCartForm = document.getElementById('addToCartForm');
+            if (addToCartForm) {
+                addToCartForm.addEventListener('submit', function(e) {
+                    // Check if size selection is required (for products with sizes)
+                    const sizeSelector = document.querySelector('.size-selection');
+                    if (sizeSelector) {
+                        // Get the selected size
+                        const selectedSize = document.getElementById('selectedSizeInput').value;
+                        console.log("Form submitted with selected size: " + selectedSize);
+                        
+                        // Continue with form submission if size is selected
+                        if (!selectedSize) {
+                            e.preventDefault();
+                            console.log("Form submission prevented - no size selected");
+                            alert("Please select a size before adding to cart");
+                        }
+                    }
+                });
             }
         });
         
         function selectSize(element, size) {
+            console.log("Size selected: " + size);
+            
             // Remove active class from all size options
             document.querySelectorAll('.size-option').forEach(el => {
                 el.classList.remove('active');
             });
             
-            // Add active class to clicked element
             element.classList.add('active');
+          
+            const selectedSizeInput = document.getElementById('selectedSizeInput');
+            if (selectedSizeInput) {
+                selectedSizeInput.value = size;
+                console.log("Updated hidden input value to: " + selectedSizeInput.value);
+            } else {
+                console.error("Could not find selectedSizeInput element");
+            }
             
-            // Update hidden input
-            document.getElementById('selectedSize').value = size;
-            
-            // Enable add to cart button
-            document.getElementById('addToCartBtn').disabled = false;
+            // Enable add to cart button if it was disabled
+            const addToCartBtn = document.getElementById('addToCartBtn');
+            if (addToCartBtn && addToCartBtn.disabled) {
+                addToCartBtn.disabled = false;
+                console.log("Add to cart button enabled");
+            }
         }
         
         function changeMainImage(thumbnail, imageSrc) {
             // Update main image
             const mainImage = document.getElementById('main-product-image');
-            
-            // Store original src in case the new one fails to load
-            const originalSrc = mainImage.src;
-            
-            // Set up error handler before changing source
-            mainImage.onerror = function() {
-                // If the new image fails to load, revert to the original
-                this.src = originalSrc;
-                console.log('Failed to load alternate image: ' + imageSrc);
-            };
-            
-            // Try to load the new image
             mainImage.src = imageSrc;
+            mainImage.onerror = function() {
+                this.onerror = null;
+                this.src = '/images/products/no-image.jpg';
+            };
             
             // Update active thumbnail
             document.querySelectorAll('.thumbnail-item').forEach(item => {
@@ -449,289 +362,5 @@
             });
             thumbnail.classList.add('active');
         }
-        
-        // Style Assistant Chat Functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            const productId = @Model.ProductId;
-            const styleAssistantBtn = document.getElementById('styleAssistantBtn');
-            const chatInterface = document.getElementById('chatInterface');
-            const closeChat = document.getElementById('closeChat');
-            const chatMessages = document.getElementById('chatMessages');
-            const userInput = document.getElementById('userInput');
-            const sendButton = document.getElementById('sendButton');
-            
-            // Open chat when styling button is clicked
-            styleAssistantBtn.addEventListener('click', function() {
-                chatInterface.style.display = 'flex';
-                
-                // Only add welcome message if it's not already there
-                if (chatMessages.children.length === 0) {
-                    // Add initial welcome message
-                    addMessage('bot', `Hi there! I can help you find items that go perfectly with this ${@Json.Serialize(Model.Name)}. What would you like to know?`);
-                    
-                    // Add quick response buttons
-                    addQuickResponseButtons();
-                }
-                
-                // Focus on input
-                userInput.focus();
-            });
-            
-            // Close chat
-            closeChat.addEventListener('click', function() {
-                chatInterface.style
-                chatInterface.style.display = 'none';
-           });
-           
-           // Send user message
-           sendButton.addEventListener('click', sendUserMessage);
-           userInput.addEventListener('keypress', function(e) {
-               if (e.key === 'Enter') {
-                   sendUserMessage();
-               }
-           });
-           
-           function sendUserMessage() {
-               const message = userInput.value.trim();
-               if (message) {
-                   addMessage('user', message);
-                   userInput.value = '';
-                   
-                   // Show typing indicator
-                   const typingIndicator = document.createElement('div');
-                   typingIndicator.className = 'typing-indicator';
-                   typingIndicator.textContent = 'Thinking';
-                   chatMessages.appendChild(typingIndicator);
-                   
-                   // Scroll to bottom
-                   chatMessages.scrollTop = chatMessages.scrollHeight;
-                   
-                   // Send to backend
-                   fetch('/api/StyleAssistant/chat', {
-                       method: 'POST',
-                       headers: {
-                           'Content-Type': 'application/json'
-                       },
-                       body: JSON.stringify({
-                           productId: productId,
-                           userMessage: message
-                       })
-                   })
-                   .then(response => response.json())
-                   .then(data => {
-                       // Remove typing indicator
-                       chatMessages.removeChild(typingIndicator);
-                       
-                       // Add bot response
-                       addMessage('bot', data.message);
-                       
-                       // Display recommended products if any
-                       if (data.recommendedProducts && data.recommendedProducts.length > 0) {
-                           displayRecommendedProducts(data.recommendedProducts);
-                       }
-                   })
-                   .catch(error => {
-                       console.error('Error:', error);
-                       chatMessages.removeChild(typingIndicator);
-                       addMessage('bot', 'Sorry, I encountered an error while processing your request.');
-                   });
-               }
-           }
-           
-           function getRecommendations() {
-               // Use more general language
-               addMessage('user', "Show me what would go well with this");
-               
-               // Show typing indicator
-               const typingIndicator = document.createElement('div');
-               typingIndicator.className = 'typing-indicator';
-               typingIndicator.textContent = 'Finding perfect matches';
-               chatMessages.appendChild(typingIndicator);
-               
-               // Scroll to bottom
-               chatMessages.scrollTop = chatMessages.scrollHeight;
-               
-               fetch('/api/StyleAssistant/recommendations', {
-                   method: 'POST',
-                   headers: {
-                       'Content-Type': 'application/json'
-                   },
-                   body: JSON.stringify({
-                       productId: productId
-                   })
-               })
-               .then(response => response.json())
-               .then(data => {
-                   // Remove typing indicator
-                   chatMessages.removeChild(typingIndicator);
-                   
-                   // Add bot response
-                   addMessage('bot', data.message);
-                   
-                   // Display recommended products
-                   if (data.recommendedProducts && data.recommendedProducts.length > 0) {
-                       displayRecommendedProducts(data.recommendedProducts);
-                   } else {
-                       addMessage('bot', 'I couldn\'t find any matching products at the moment. Is there something specific you\'d like to know?');
-                   }
-               })
-               .catch(error => {
-                   console.error('Error:', error);
-                   chatMessages.removeChild(typingIndicator);
-                   addMessage('bot', 'Sorry, I encountered an error while finding matching items.');
-               });
-           }
-           
-           function addQuickResponseButtons() {
-               const quickResponses = document.createElement('div');
-               quickResponses.className = 'quick-responses';
-               
-               const suggestButton = document.createElement('button');
-               suggestButton.className = 'quick-response-button';
-               suggestButton.textContent = "Show matching items";
-               suggestButton.onclick = function() {
-                   getRecommendations();
-               };
-               
-               const adviceButton = document.createElement('button');
-               adviceButton.className = 'quick-response-button';
-               adviceButton.textContent = "Styling advice";
-               adviceButton.onclick = function() {
-                   addMessage('user', "How should I style this item?");
-                   
-                   // Show typing indicator
-                   const typingIndicator = document.createElement('div');
-                   typingIndicator.className = 'typing-indicator';
-                   typingIndicator.textContent = 'Thinking';
-                   chatMessages.appendChild(typingIndicator);
-                   
-                   // Scroll to bottom
-                   chatMessages.scrollTop = chatMessages.scrollHeight;
-                   
-                   // Send to backend
-                   fetch('/api/StyleAssistant/chat', {
-                       method: 'POST',
-                       headers: {
-                           'Content-Type': 'application/json'
-                       },
-                       body: JSON.stringify({
-                           productId: productId,
-                           userMessage: "How should I style this item?"
-                       })
-                   })
-                   .then(response => response.json())
-                   .then(data => {
-                       // Remove typing indicator
-                       chatMessages.removeChild(typingIndicator);
-                       
-                       // Add bot response
-                       addMessage('bot', data.message);
-                       
-                       // Display recommended products if any
-                       if (data.recommendedProducts && data.recommendedProducts.length > 0) {
-                           displayRecommendedProducts(data.recommendedProducts);
-                       }
-                   })
-                   .catch(error => {
-                       console.error('Error:', error);
-                       chatMessages.removeChild(typingIndicator);
-                       addMessage('bot', 'Sorry, I encountered an error while processing your request.');
-                   });
-               };
-               
-               quickResponses.appendChild(suggestButton);
-               quickResponses.appendChild(adviceButton);
-               chatMessages.appendChild(quickResponses);
-           }
-           
-           function addMessage(sender, message) {
-    // Check if it's a bot message with product IDs
-    if (sender === 'bot' && message.includes('ID:')) {
-        // Extract any conversational part before the product recommendations
-        let introText = "";
-        
-        if (message.includes('Product recommendations:')) {
-            introText = message.split('Product recommendations:')[0].trim();
-        } else if (message.includes('Here are some recommendations')) {
-            introText = "Here are some items that would go well with this:";
-        }
-        
-        // If we have an intro text, show it
-        if (introText && !introText.includes('ID:')) {
-            const messageElement = document.createElement('div');
-            messageElement.className = `message ${sender}-message`;
-            messageElement.innerHTML = `<p>${introText}</p>`;
-            chatMessages.appendChild(messageElement);
-        }
-        
-        // Don't add the raw message with IDs - the products will be displayed separately
-    } else {
-        // Regular message handling for messages without product IDs
-        const messageElement = document.createElement('div');
-        messageElement.className = `message ${sender}-message`;
-        
-        // Replace newlines with <br> tags
-        const formattedMessage = message.replace(/\n/g, '<br>');
-        
-        messageElement.innerHTML = `<p>${formattedMessage}</p>`;
-        chatMessages.appendChild(messageElement);
-    }
-    
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-           
-           function displayRecommendedProducts(products) {
-    // Group products by category
-    const productsByCategory = {};
-    products.forEach(product => {
-        const categoryName = product.categoryName || 'Other';
-        if (!productsByCategory[categoryName]) {
-            productsByCategory[categoryName] = [];
-        }
-        productsByCategory[categoryName].push(product);
-    });
-    
-    // Create a container for recommended products
-    const productsContainer = document.createElement('div');
-    productsContainer.className = 'recommended-products';
-    
-    // Create HTML for each category
-    for (const category in productsByCategory) {
-        const categoryProducts = productsByCategory[category];
-        
-        const categorySection = document.createElement('div');
-        categorySection.className = 'product-category';
-        categorySection.innerHTML = `<h4>${category}:</h4>`;
-        
-        const productsGrid = document.createElement('div');
-        productsGrid.className = 'products-grid';
-        
-        categoryProducts.forEach(product => {
-            const productCard = document.createElement('div');
-            productCard.className = 'product-card';
-            productCard.innerHTML = `
-                <a href="/Product/Details/${product.productId}" class="product-link">
-                    <img src="${product.imageUrl}" alt="${product.name}" onerror="this.src='/images/products/no-image.jpg'">
-                    <h5>${product.name}</h5>
-                    <p>${product.color} - ${product.price.toFixed(2)} LEI</p>
-                </a>
-                <form action="/Cart/AddToCart" method="post">
-                    <input type="hidden" name="productId" value="${product.productId}">
-                    <input type="hidden" name="returnToProduct" value="false">
-                    <button type="submit" class="add-to-cart-btn">Add to Cart</button>
-                </form>
-            `;
-            productsGrid.appendChild(productCard);
-        });
-        
-        categorySection.appendChild(productsGrid);
-        productsContainer.appendChild(categorySection);
-    }
-    
-    // Add to chat messages
-    chatMessages.appendChild(productsContainer);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-       });
-   </script>
+    </script>
 }

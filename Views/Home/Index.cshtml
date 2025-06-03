@@ -2,19 +2,18 @@
     ViewData["Title"] = "Home";
 }
 
-<!-- Hero Section with Black Background and Model -->
 <div class="hero-section">
-    <div class="container-fluid px-0">
+    <div class="container-fluid p-0">
         <div class="row g-0">
-            <div class="col-md-5">
-                <img src="/images/firstImage2.png" alt="Model" class="hero-model">
+            <div class="col-lg-6 col-md-5">
+                <img src="/images/firstImage.png" alt="Model" class="hero-model">
             </div>
-            <div class="col-md-7 d-flex align-items-center">
-                <div class="hero-content text-end mx-5">
+            <div class="col-lg-6 col-md-7 d-flex align-items-center justify-content-center">
+                <div class="hero-content text-center text-md-end px-4 py-5 py-md-0">
                     <h1 class="hero-title">YOUR STYLE</h1>
                     <h1 class="hero-title">YOUR SIGNATURE</h1>
-                    <p class="hero-subtitle mt-4"><i class="fas fa-do-not-enter    "></i>
-                        Elevate Your Wardrobe. Empower Your Confidence. And Embrace<br>
+                    <p class="hero-subtitle mt-3 mt-md-4">
+                        Elevate Your Wardrobe. Empower Your Confidence. And Embrace<br class="d-none d-md-block">
                         Your Unique Fashion Journey
                     </p>
                     <div class="mt-4">
@@ -26,56 +25,141 @@
     </div>
 </div>
 
-<!-- Sleek Timeless Distinct Section -->
-<div class="tagline-section">
-    <div class="container">
-        <h2 class="tagline-text">Sleek. Timeless. Distinct.</h2>
-    </div>
-</div>
-
-<!-- Full Width Image Showcase -->
-<div class="container-fluid px-0">
-    <div class="row g-0">
-        <div class="col-md-6">
-            <img src="/images/secondImage.jpg" alt="Fashion Image" class="img-fluid full-width-image">
-        </div>
-        <div class="col-md-6">
-            <img src="/images/thirdImage.jpg" alt="Fashion Image" class="img-fluid full-width-image">
-        </div>
-    </div>
-</div>
-
-<!-- The Art of Dressing Well Section -->
-<div class="tagline-section">
-    <div class="container">
-        <h2 class="tagline-text">The Art of Dressing Well</h2>
-    </div>
-</div>
-
-<!-- The Finesse Experience Section -->
-<div class="finesse-experience-section">
-    <div class="video-container">
-        <video autoplay muted loop class="full-width-video">
-            <source src="/videos/fashion.mp4" type="video/mp4">
-            Your browser does not support the video tag.
-        </video>
-        <div class="video-overlay">
-            <h1 class="video-text">FINESSE</h1>
-        </div>
-    </div>
-</div>
-
-<!-- Newsletter Section -->
-<div class="container my-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8 text-center">
-            <h2 class="section-title">Join Our Community</h2>
-            <p class="lead mb-4">Subscribe to our newsletter for exclusive offers, new arrivals, and styling tips.</p>
-            <div class="input-group mb-3 mx-auto" style="max-width: 500px;">
-                <input type="email" class="form-control" placeholder="Your email address">
-                <button class="btn btn-dark" type="button">SUBSCRIBE</button>
+<!-- About Us Section -->
+<div class="container mt-5 mb-5">
+    <!-- Our Story -->
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="section-header">
+                <h2 class="section-title text-start mb-4">OUR STORY</h2>
             </div>
-            <p class="small text-muted">By subscribing, you agree to our terms and privacy policy.</p>
+            <p class="mb-4">FINESSE was born from a passion for style and a belief that clothing is more than just fabric—it's an extension of identity. Founded in 2023, we set out to create a brand that combines timeless elegance with contemporary trends, offering premium clothing at accessible prices.</p>
+            <p>What began as a small boutique has evolved into a comprehensive fashion destination, without ever losing sight of our original vision: to help everyone discover their personal style and express it with confidence.</p>
+        </div>
+        <div class="col-md-6">
+            <div class="story-image-container">
+                <img src="/images/about-story.jpg" alt="Our Story" class="img-fluid" onerror="this.src='/images/aboutUs1.jpg'">
+            </div>
+        </div>
+    </div>
+
+    <!-- Our Values -->
+    <div class="values-section py-5 my-5 bg-light">
+        <div class="container">
+            <h2 class="section-title">Our Values</h2>
+            <div class="row mt-4">
+                <!-- Value Card 1 -->
+                <div class="col-md-4 mb-4">
+                    <div class="value-card text-center p-4">
+                        <div class="value-icon mb-3">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <h4>Quality</h4>
+                        <p>We never compromise on quality, ensuring each garment is made to last and crafted with the finest materials</p>
+                    </div>
+                </div>
+                
+                <!-- Value Card 2 -->
+                <div class="col-md-4 mb-4">
+                    <div class="value-card text-center p-4">
+                        <div class="value-icon mb-3">
+                            <i class="fas fa-leaf"></i>
+                        </div>
+                        <h4>Sustainability</h4>
+                        <p>We're committed to reducing our environmental impact through responsible sourcing and production practices</p>
+                    </div>
+                </div>
+                
+                <!-- Value Card 3 -->
+                <div class="col-md-4 mb-4">
+                    <div class="value-card text-center p-4">
+                        <div class="value-icon mb-3">
+                            <i class="fas fa-heart"></i>
+                        </div>
+                        <h4>Community</h4>
+                        <p>We value our community of customers and strive to create meaningful connections through fashion</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+<style>
+    /* Section styling */
+    .section-title {
+        text-transform: uppercase;
+        font-weight: 700;
+        letter-spacing: 1px;
+    }
+    
+    .red-line {
+        width: 80px;
+        height: 3px;
+        background-color: #b10000;
+    }
+    
+   
+    .btn-discover {
+    background-color: #b10000;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+    border: none;
+    transition: background-color 0.3s;
+     }
+
+    .hero-model {
+    max-height: 600px;
+    width: auto;
+    object-fit: cover;
+     }
+
+    .hero-section {
+    overflow: hidden;
+    }
+    
+    /* Values section */
+    .values-section {
+        background-color: #ffffff !important; 
+    }
+    
+    .value-card {
+        background-color: white;
+        border-radius: 8px;
+        height: 100%;
+        border: 1px solid #f0f0f0;
+    }
+    
+
+    .value-icon {
+        font-size: 2.5rem;
+        color: #b10000;
+    }
+    
+    @@media (max-width: 768px) {
+        .story-image-container {
+            height: 300px;
+            margin-top: 20px;
+        }
+    }
+    
+    @@media (max-width: 576px) {
+        .story-image-container {
+            height: 250px;
+        }
+    }
+
+    @@media (max-width: 768px) {
+    .hero-section {
+        padding-top: 30px;
+    }
+    
+    .hero-content {
+        padding: 30px 15px;
+        text-align: center !important;
+    }
+}
+</style>

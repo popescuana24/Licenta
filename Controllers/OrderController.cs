@@ -5,21 +5,17 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ClothingWebApp.Controllers
 {
-    /// <summary>
-    /// Handles order management (admin functionality)
-    /// </summary>
     public class OrderController : Controller
     {
         private readonly ApplicationDbContext _context;
+    
         
         public OrderController(ApplicationDbContext context)
         {
             _context = context;
         }
         
-        /// <summary>
-        /// Shows all orders (admin view)
-        /// </summary>
+        //shows all orders
         public async Task<IActionResult> Index()
         {
             var orders = await _context.Orders
@@ -30,9 +26,7 @@ namespace ClothingWebApp.Controllers
             return View(orders);
         }
         
-        /// <summary>
-        /// Shows details for a specific order
-        /// </summary>
+        //Shows details for a specific order
         public async Task<IActionResult> Details(int id)
         {
             var order = await _context.Orders
@@ -49,17 +43,9 @@ namespace ClothingWebApp.Controllers
                 .FirstOrDefaultAsync(p => p.OrderId == id);
                 
             ViewBag.Payment = payment;
-            
+            // Return view with order details
             return View(order);
         }
         
-        /// <summary>
-        /// Shows user's order history
-        /// </summary>
-        public Task<IActionResult> History()
-        {
-            // Redirect to Account controller's OrderHistory
-            return Task.FromResult<IActionResult>(RedirectToAction("OrderHistory", "Account"));
-        }
-    }
+}
 }

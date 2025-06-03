@@ -41,7 +41,7 @@ namespace ClothingWebApp.Migrations
 
                     b.HasIndex("CustomerId");
 
-                    b.ToTable("Carts");
+                    b.ToTable("Carts", (string)null);
                 });
 
             modelBuilder.Entity("ClothingWebApp.Models.Category", b =>
@@ -59,7 +59,7 @@ namespace ClothingWebApp.Migrations
 
                     b.HasKey("CategoryId");
 
-                    b.ToTable("Categories");
+                    b.ToTable("Categories", (string)null);
                 });
 
             modelBuilder.Entity("ClothingWebApp.Models.Customer", b =>
@@ -92,7 +92,7 @@ namespace ClothingWebApp.Migrations
 
                     b.HasKey("CustomerId");
 
-                    b.ToTable("Customers");
+                    b.ToTable("Customers", (string)null);
                 });
 
             modelBuilder.Entity("ClothingWebApp.Models.Order", b =>
@@ -116,7 +116,7 @@ namespace ClothingWebApp.Migrations
 
                     b.HasIndex("CustomerId");
 
-                    b.ToTable("Orders");
+                    b.ToTable("Orders", (string)null);
                 });
 
             modelBuilder.Entity("ClothingWebApp.Models.Payment", b =>
@@ -141,7 +141,7 @@ namespace ClothingWebApp.Migrations
 
                     b.HasIndex("OrderId");
 
-                    b.ToTable("Payments");
+                    b.ToTable("Payments", (string)null);
                 });
 
             modelBuilder.Entity("ClothingWebApp.Models.Product", b =>
@@ -179,7 +179,7 @@ namespace ClothingWebApp.Migrations
 
                     b.HasIndex("CategoryId");
 
-                    b.ToTable("Products");
+                    b.ToTable("Products", (string)null);
                 });
 
             modelBuilder.Entity("ClothingWebApp.Models.Cart", b =>

@@ -5,114 +5,122 @@
 }
 
 <div class="container mt-5">
-    <div class="row">
-        <div class="col-md-10 mx-auto">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="mb-0">My Profile</h1>
-                <a href="/Product" class="btn btn-continue-shopping">
-                    <i class="fas fa-arrow-left me-2"></i> Continue Shopping
-                </a>
-            </div>
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <h1 class="h3 mb-4">My Profile</h1>
             
             @if (TempData["SuccessMessage"] != null)
             {
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <div class="alert alert-success alert-dismissible fade show py-2" role="alert">
                     @TempData["SuccessMessage"]
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             }
             
-            <div class="row">
-                <!-- Left sidebar with profile menu -->
-                <div class="col-md-3 mb-4">
-                    <div class="card profile-sidebar">
-                        <div class="card-body text-center py-5">
+            <div class="row g-4">
+                <!-- Profile card with user info and navigation -->
+                <div class="col-md-4">
+                    <div class="card mb-4">
+                        <div class="card-body text-center py-4">
                             <div class="profile-avatar mb-3">
-                                <i class="fas fa-user-circle" style="font-size: 5rem; color: #b10000;"></i>
+                                <i class="fas fa-user-circle" style="font-size: 4rem; color: #b10000;"></i>
                             </div>
                             <h5 class="mb-1">@Model.FirstName @Model.LastName</h5>
-                            <p class="text-muted">@Model.Email</p>
-                        </div>
-                        <div class="list-group list-group-flush">
-                            <a href="@Url.Action("Profile", "Account")" class="list-group-item list-group-item-action active">
-                                <i class="fas fa-user me-2"></i> Personal Information
+                            <p class="text-muted small mb-3">@Model.Email</p>
+                            
+                            <div class="list-group mt-3">
+                            <a href="#" class="list-group-item list-group-item-action active" id="personal-info-tab">
+                            <i class="fas fa-user me-2"></i> Personal Information
                             </a>
                             <a href="@Url.Action("OrderHistory", "Account")" class="list-group-item list-group-item-action">
-                                <i class="fas fa-shopping-bag me-2"></i> Order History
+                            <i class="fas fa-history me-2"></i> Order History
                             </a>
                             <a href="@Url.Action("ChangePassword", "Account")" class="list-group-item list-group-item-action">
-                                <i class="fas fa-lock me-2"></i> Change Password
+                            <i class="fas fa-lock me-2"></i> Change Password
                             </a>
                             <a href="@Url.Action("Logout", "Account")" class="list-group-item list-group-item-action text-danger">
-                                <i class="fas fa-sign-out-alt me-2"></i> Logout
-                            </a>
+                            <i class="fas fa-sign-out-alt me-2"></i> Logout
+    </a>
+</div>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Right content area with personal information -->
-                <div class="col-md-9">
+                <!-- Personal Information card -->
+                <div class="col-md-8">
                     <div class="card">
-                        <div class="card-header d-flex justify-content-between align-items-center">
+                        <div class="card-header d-flex justify-content-between align-items-center py-3">
                             <h5 class="mb-0">Personal Information</h5>
-                            <a href="@Url.Action("EditProfile", "Account")" class="btn btn-sm btn-outline-dark">
+                            <button type="button" id="edit-toggle-btn" class="btn btn-sm btn-outline-dark">
                                 <i class="fas fa-pen me-1"></i> Edit
-                            </a>
+                            </button>
                         </div>
                         <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6 mb-4">
-                                    <div class="form-group">
-                                        <label class="form-label text-muted">First Name</label>
-                                        <p class="fw-bold fs-5">@Model.FirstName</p>
+                            <!-- View Mode -->
+                            <div id="view-mode">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label text-muted small">First Name</label>
+                                            <p class="fw-bold">@Model.FirstName</p>
+                                        </div>
                                     </div>
-                                </div>
-                                
-                                <div class="col-md-6 mb-4">
-                                    <div class="form-group">
-                                        <label class="form-label text-muted">Last Name</label>
-                                        <p class="fw-bold fs-5">@Model.LastName</p>
+                                    
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label text-muted small">Last Name</label>
+                                            <p class="fw-bold">@Model.LastName</p>
+                                        </div>
                                     </div>
-                                </div>
-                                
-                                <div class="col-md-6 mb-4">
-                                    <div class="form-group">
-                                        <label class="form-label text-muted">Email Address</label>
-                                        <p class="fw-bold fs-5">@Model.Email</p>
+                                    
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label text-muted small">Email Address</label>
+                                            <p class="fw-bold">@Model.Email</p>
+                                        </div>
                                     </div>
-                                </div>
-                                
-                                <div class="col-md-12">
-                                    <div class="form-group">
-                                        <label class="form-label text-muted">Shipping Address</label>
-                                        <p class="fw-bold fs-5">@(string.IsNullOrEmpty(Model.Address) ? "No address provided" : Model.Address)</p>
+                                    
+                                    <div class="col-12">
+                                        <div class="mb-2">
+                                            <label class="form-label text-muted small">Shipping Address</label>
+                                            <p class="fw-bold">@(string.IsNullOrEmpty(Model.Address) ? "No address provided" : Model.Address)</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                             
-                            <div class="border-top pt-4 mt-2">
-                                <p class="text-muted mb-2">Security Settings</p>
-                                <a href="@Url.Action("ChangePassword", "Account")" class="btn btn-outline-dark">
-                                    <i class="fas fa-lock me-2"></i> Change Password
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="card mt-4">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">Recent Orders</h5>
-                            <a href="@Url.Action("OrderHistory", "Account")" class="btn btn-sm btn-outline-dark">
-                                View All
-                            </a>
-                        </div>
-                        <div class="card-body p-0">
-                            <!-- This part needs to be filled with actual data if available -->
-                            <!-- Otherwise, show a placeholder message -->
-                            <div class="text-center py-5">
-                                <i class="fas fa-shopping-bag mb-3" style="font-size: 2rem; color: #ccc;"></i>
-                                <p>You haven't placed any orders yet.</p>
-                                <a href="/Product" class="btn btn-checkout">Start Shopping</a>
+                            <!-- Edit Mode (ESTE ASCUNS BY DEFAULT)-->
+                            <div id="edit-mode" style="display: none;">
+                                <form asp-action="EditProfile" method="post">
+                                    <input type="hidden" asp-for="CustomerId" />
+                                    <input type="hidden" asp-for="Email" />
+                                    <input type="hidden" asp-for="Password" />
+                                    
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label asp-for="FirstName" class="form-label">First Name</label>
+                                            <input asp-for="FirstName" class="form-control" />
+                                            <span asp-validation-for="FirstName" class="text-danger small"></span>
+                                        </div>
+                                        
+                                        <div class="col-md-6">
+                                            <label asp-for="LastName" class="form-label">Last Name</label>
+                                            <input asp-for="LastName" class="form-control" />
+                                            <span asp-validation-for="LastName" class="text-danger small"></span>
+                                        </div>
+                                        
+                                        <div class="col-12">
+                                            <label asp-for="Address" class="form-label">Shipping Address</label>
+                                            <textarea asp-for="Address" class="form-control" rows="3" placeholder="Enter your full shipping address"></textarea>
+                                            <span asp-validation-for="Address" class="text-danger small"></span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="text-end mt-4">
+                                        <button type="button" id="cancel-edit-btn" class="btn btn-outline-secondary me-2">Cancel</button>
+                                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                                    </div>
+                                </form>
                             </div>
                         </div>
                     </div>
@@ -123,18 +131,18 @@
 </div>
 
 <style>
-    .profile-sidebar .list-group-item.active {
+    .list-group-item.active {
         background-color: #b10000;
         border-color: #b10000;
     }
     
-    .profile-sidebar .list-group-item:hover:not(.active) {
+    .list-group-item:hover:not(.active) {
         background-color: #f8f9fa;
     }
     
     .profile-avatar {
-        width: 100px;
-        height: 100px;
+        width: 80px;
+        height: 80px;
         border-radius: 50%;
         background-color: #f8f9fa;
         display: flex;
@@ -142,4 +150,44 @@
         justify-content: center;
         margin: 0 auto;
     }
+    
+    .btn-primary {
+        background-color: #b10000;
+        border-color: #b10000;
+    }
+    
+    .btn-primary:hover {
+        background-color: #900000;
+        border-color: #900000;
+    }
+    
+    @@media (max-width: 767px) {
+        .row.g-4 {
+            gap: 1rem !important;
+        }
+    }
 </style>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const editToggleBtn = document.getElementById('edit-toggle-btn');
+            const cancelEditBtn = document.getElementById('cancel-edit-btn');
+            const viewMode = document.getElementById('view-mode');
+            const editMode = document.getElementById('edit-mode');
+            
+            editToggleBtn.addEventListener('click', function() {
+                viewMode.style.display = 'none';
+                editMode.style.display = 'block';
+                editToggleBtn.style.display = 'none';
+            });
+            
+            cancelEditBtn.addEventListener('click', function() {
+                editMode.style.display = 'none';
+                viewMode.style.display = 'block';
+                editToggleBtn.style.display = 'inline-block';
+            });
+        });
+    </script>
+}

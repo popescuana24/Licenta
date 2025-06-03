@@ -7,13 +7,9 @@
 <div class="container mt-5">
     <div class="row">
         <div class="col-md-10 mx-auto">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="mb-0">Shopping Cart</h1>
-                <a href="/Product" class="btn btn-continue-shopping">
-                    <i class="fas fa-arrow-left me-2"></i> Continue Shopping
-                </a>
-            </div>
+            <h1 class="mb-4">Shopping Cart</h1>
 
+            <!-- Alert Messages -->
             @if (TempData["ErrorMessage"] != null)
             {
                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -30,22 +26,22 @@
                 </div>
             }
 
+            <!-- Empty Cart State -->
             @if (Model.CartItems == null || !Model.CartItems.Any())
             {
                 <div class="card order-card">
                     <div class="card-body text-center py-5">
                         <i class="fas fa-shopping-cart mb-3" style="font-size: 3rem; color: #ccc;"></i>
                         <h3>Your Cart is Empty</h3>
-                        <p class="text-muted">Looks like you haven't added any items to your cart yet.</p>
-                        <a href="/Product" class="btn btn-checkout mt-3">Start Shopping</a>
                     </div>
                 </div>
             }
             else
             {
+                <!-- Cart Items -->
                 <div class="card order-card mb-4">
                     <div class="card-header">
-                        <h5 class="mb-0">Cart Items (@Model.CartItems.Count)</h5>
+                        <h5 class="mb-0">Cart Items </h5>
                     </div>
                     <div class="card-body p-0">
                         <div class="table-responsive">
@@ -119,33 +115,13 @@
                     </div>
                 </div>
                 
+                <!-- Order Summary -->
                 <div class="row">
-                    <div class="col-md-6">
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card order-card">
-                            <div class="card-body">
-                                <h5 class="mb-3">Order Summary</h5>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span>Subtotal:</span>
-                                    <span>@Model.CartItems.Sum(p => p.Product?.Price * p.Quantity ?? 0).ToString("C")</span>
-                                </div>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span>Shipping:</span>
-                                    <span>FREE</span>
-                                </div>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span>Tax:</span>
-                                    <span>$0.00</span>
-                                </div>
-                                <hr>
-                                <div class="d-flex justify-content-between order-total">
-                                    <span><strong>Total:</strong></span>
-                                    <span><strong>@Model.CartItems.Sum(p => p.Product?.Price * p.Quantity ?? 0).ToString("C")</strong></span>
-                                </div>
-                                <div class="mt-3">
-                                    <a asp-action="Checkout" class="btn btn-checkout w-100">Proceed to Checkout</a>
-                                </div>
+                    <div class="col-md-12">
+                        <div class="float-end">
+                            <div class="order-total-section">
+                                <h5 class="mb-3">Total: <span class="total-amount">@Model.CartItems.Sum(p => p.Product?.Price * p.Quantity ?? 0).ToString("C")</span></h5>
+                                <a asp-action="Checkout" class="btn btn-checkout">Checkout</a>
                             </div>
                         </div>
                     </div>
@@ -154,6 +130,62 @@
         </div>
     </div>
 </div>
+
+<style>
+    /* Common Card Styling */
+    .order-card {
+        border-radius: 0.5rem;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+    }
+    
+    .order-card .card-header {
+        background-color: rgba(0, 0, 0, 0.03);
+        padding: 0.75rem 1.25rem;
+        font-weight: 500;
+    }
+    
+    /* Order Total Section */
+    .order-total-section {
+        margin-bottom: 30px;
+    }
+    
+    .total-amount {
+        font-weight: bold;
+        color: #b10000;
+    }
+    
+    /* Button Styling */
+    .btn-checkout {
+        background-color: #b10000;
+        color: white;
+        padding: 0.5rem 1.5rem;
+        border: none;
+        border-radius: 0.375rem;
+    }
+    
+    .btn-checkout:hover {
+        background-color: #900000;
+        color: white;
+    }
+    
+    /* Quantity Controls */
+    .quantity-btn {
+        padding: 0.25rem 0.5rem;
+    }
+    
+    /* Responsive Adjustments */
+    @@media (max-width: 768px) {
+        .table th, .table td {
+            padding: 0.5rem;
+        }
+        
+        .input-group {
+            width: 100px !important;
+        }
+    }
+</style>
 
 @section Scripts {
     <script>

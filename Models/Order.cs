@@ -4,34 +4,25 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ClothingWebApp.Models
 {
-    /// <summary>
-    /// Represents a customer order in the system
-    /// </summary>
     public class Order
     {
-        /// <summary>
-        /// Primary key for the order
-        /// </summary>
+        //Primary key for the order
         public int OrderId { get; set; }
         
-        /// <summary>
-        /// Foreign key to the Customer table
-        /// </summary>
+        //Foreign key to the Customer table
         public int CustomerId { get; set; }
         
-        /// <summary>
-        /// Navigation property to the customer who placed the order
-        /// </summary>
+        //Navigation property to the customer who placed the order
         public Customer? Customer { get; set; }
         
-        /// <summary>
-        /// Date and time when the order was placed
-        /// </summary>
+        //Date and time when the order was placed
         public DateTime OrderDate { get; set; }
         
-        /// <summary>
-        /// Total monetary amount of the order
-        /// </summary>
+        //Total amount of the order
         public decimal TotalAmount { get; set; }
+        
+        // NEW: Collection of items in this order
+        // This provides the complete order history with products, quantities, and prices
+        public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
     }
 }
