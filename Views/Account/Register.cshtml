@@ -20,6 +20,7 @@
                     }
                     
                     <form asp-action="Register" method="post">
+                       
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label asp-for="FirstName" class="form-label">First Name</label>
@@ -114,15 +115,7 @@
         color: #900000;
     }
     
-    @@media (max-width: 576px) {
-        .card-body {
-            padding: 1rem;
-        }
-        
-        .row.g-3 {
-            gap: 0.75rem !important;
-        }
-    }
+    
 </style>
 
 @section Scripts {

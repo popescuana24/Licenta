@@ -18,6 +18,7 @@ namespace ClothingWebApp.Controllers
         // GET all customers i have(if i have an admin pannel but i dont have)
         public async Task<IActionResult> Index()
         {
+            //added to a list
             var customers = await _context.Customers.ToListAsync();
             return View(customers);
         }

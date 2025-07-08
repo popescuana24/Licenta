@@ -5,8 +5,8 @@ using Microsoft.Extensions.Configuration;
 namespace ClothingWebApp.Data
 {
     
-    /// Factory for creating DbContext instances at design time
-    /// Used by EF Core migrations and other design-time tools
+    //Factory for creating DbContext instances at design time
+   
    
     public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<ApplicationDbContext>
     {

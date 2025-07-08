@@ -4,9 +4,7 @@ using ClothingWebApp.Models;
 namespace ClothingWebApp.Data
 {
     
-    /// Main database context for the application
-    /// Defines database tables and their relationships
-  
+
     public class ApplicationDbContext : DbContext
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
@@ -19,7 +17,7 @@ namespace ClothingWebApp.Data
         public DbSet<Category> Categories { get; set; }
         public DbSet<Customer> Customers { get; set; }
         public DbSet<Order> Orders { get; set; }
-        public DbSet<OrderItem> OrderItems { get; set; } // ADD THIS LINE
+        public DbSet<OrderItem> OrderItems { get; set; } 
         public DbSet<Payment> Payments { get; set; }
         public DbSet<Cart> Carts { get; set; }
 
@@ -66,26 +64,26 @@ namespace ClothingWebApp.Data
                 .WithMany()
                 .HasForeignKey(c => c.CustomerId);
 
-            // Configure CartId as auto-generated
+         
             modelBuilder.Entity<Cart>()
                 .Property(c => c.CartId)
                 .ValueGeneratedOnAdd();
 
-            // Add CartItemsJson column to store serialized cart items
+            // CartItemsJson column to store serialized cart items
             modelBuilder.Entity<Cart>()
                 .Property<string>("CartItemsJson")
-                .HasColumnType("nvarchar(max)");
+                .HasColumnType("nvarchar(max)"); // This column will store the JSON representation of cart items
 
-            // Ignore CartItems navigation property 
+            
             modelBuilder.Entity<Cart>()
-                .Ignore(c => c.CartItems);
+                .Ignore(c => c.CartItems); // Ignore the CartItems property in the database mapping
 
-            // Fix decimal precision for Price in Products SA AM DOUA DECIMALE
+            //  SA AM DOUA DECIMALE
             modelBuilder.Entity<Product>()
                 .Property(p => p.Price)
                 .HasColumnType("decimal(18,2)");
 
-            // Fix decimal precision for TotalAmount in Orders
+            
             modelBuilder.Entity<Order>()
                 .Property(o => o.TotalAmount)
                 .HasColumnType("decimal(18,2)");
@@ -95,26 +93,26 @@ namespace ClothingWebApp.Data
                 .Property(c => c.CustomerId)
                 .ValueGeneratedOnAdd();
                 
-            // NEW: OrderItem relationships
+            
             modelBuilder.Entity<OrderItem>()
-                .HasOne(oi => oi.Order)
+                .HasOne(oi => oi.Order) // relationship with the Order entity
                 .WithMany(o => o.OrderItems)
                 .HasForeignKey(oi => oi.OrderId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Cascade); // When an order is deleted, its items are also deleted
 
             modelBuilder.Entity<OrderItem>()
-                .HasOne(oi => oi.Product)
+                .HasOne(oi => oi.Product) // relationship with the Product entity
                 .WithMany()
                 .HasForeignKey(oi => oi.ProductId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Restrict); //
 
-// Configure decimal precision for OrderItem prices
+
             modelBuilder.Entity<OrderItem>()
-                .Property(oi => oi.UnitPrice)
+                .Property(oi => oi.UnitPrice) // unit price of the product at the time of order
                 .HasColumnType("decimal(18,2)");
 
             modelBuilder.Entity<OrderItem>()
-                .Property(oi => oi.TotalPrice)
+                .Property(oi => oi.TotalPrice) // total price of the order item
                 .HasColumnType("decimal(18,2)");
         }
     }

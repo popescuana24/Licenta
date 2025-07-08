@@ -30,18 +30,18 @@ builder.Services.AddScoped<StyleRecommendationService>(provider => {
 
 
 // Session state for shopping cart
-builder.Services.AddDistributedMemoryCache();
-builder.Services.AddSession(options => {
-    options.IdleTimeout = TimeSpan.FromHours(2);
-    options.Cookie.HttpOnly = true;
-    options.Cookie.IsEssential = true;
+builder.Services.AddDistributedMemoryCache(); // In-memory cache for session state
+builder.Services.AddSession(options => { // Configure session options
+    options.IdleTimeout = TimeSpan.FromHours(2); // Set session timeout to 2 hours
+    options.Cookie.HttpOnly = true; // Make session cookie HTTP-only for security
+    options.Cookie.IsEssential = true; // Make session cookie essential
 });
 
 // Authentication
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme) // Use cookie authentication
     .AddCookie(options => {
-        options.LoginPath = "/Account/Login";
-        options.LogoutPath = "/Account/Logout";
+        options.LoginPath = "/Account/Login"; // Redirect to login page if not authenticated
+        options.LogoutPath = "/Account/Logout";// Redirect to logout page when logging out
     });
 
 
@@ -83,11 +83,11 @@ using (var scope = app.Services.CreateScope())
         
         if (!apiConnected)
         {
-            Console.WriteLine("⚠️ WARNING: Could not connect to OpenAI API. The style assistant may not work correctly.");
+            Console.WriteLine(" Could not connect to OpenAI API. The style assistant may not work correctly");
         }
         else
         {
-            Console.WriteLine("✅ Successfully connected to OpenAI API.");
+            Console.WriteLine(" Successfully connected to OpenAI APi");
         }
     }
     catch (Exception ex)

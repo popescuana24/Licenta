@@ -13,13 +13,14 @@ namespace ClothingWebApp.Controllers
         {
             _context = context;
         }
-        //all payments
+        //get emthod to show all payments
+        // Retrieves all payments, including related order and customer data
         public async Task<IActionResult> Index()
         {
             var payments = await _context.Payments
                 .Include(p => p.Order)
                 .ThenInclude(o => o!.Customer)  
-                .ToListAsync();
+                .ToListAsync(); //execute the query and returns a list of payments asynchronously
                 
             return View(payments);
         }
@@ -30,7 +31,7 @@ namespace ClothingWebApp.Controllers
             var payment = await _context.Payments
                 .Include(p => p.Order)
                 .ThenInclude(o => o!.Customer)  
-                .FirstOrDefaultAsync(p => p.PaymentId == id);
+                .FirstOrDefaultAsync(p => p.PaymentId == id); //Returns the first match or null if not found
                 
             if (payment == null)
             {

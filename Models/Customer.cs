@@ -19,6 +19,6 @@ namespace ClothingWebApp.Models
         // ustomer's hashed password
         public required string Password { get; set; }
         //property that returns the full name of the customer
-        public string FullName => $"{FirstName} {LastName}";
+        public string FullName => $"{FirstName} {LastName}"; //$ is used for string 
     }
 }

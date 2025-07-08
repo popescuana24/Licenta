@@ -83,6 +83,7 @@
                                                     </div>
                                                 </div>
                                             </td>
+                                            @*Displays the price of a single unit formatted as currency*@
                                             <td>@(item.Product?.Price.ToString("C") ?? "$0.00")</td>
                                             <td>
                                                 <form asp-action="UpdateQuantity" method="post" class="d-flex align-items-center">
@@ -175,16 +176,7 @@
         padding: 0.25rem 0.5rem;
     }
     
-    /* Responsive Adjustments */
-    @@media (max-width: 768px) {
-        .table th, .table td {
-            padding: 0.5rem;
-        }
-        
-        .input-group {
-            width: 100px !important;
-        }
-    }
+    
 </style>
 
 @section Scripts {

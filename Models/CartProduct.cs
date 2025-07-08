@@ -7,9 +7,11 @@ namespace ClothingWebApp.Models
     {
         // ID of the product in the cart
         public int ProductId { get; set; }
-        
+
+
         [JsonIgnore]
-        public Product? Product { get; set; }
+        //json ignore to avoid circular reference issues
+        public Product? Product { get; set; } // Navigationto the associated Product
      
         public string Size { get; set; } = string.Empty;
         

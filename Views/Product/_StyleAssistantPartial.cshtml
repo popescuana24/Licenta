@@ -54,11 +54,11 @@
         cursor: pointer;
         transition: transform 0.2s, background-color 0.2s;
     }
-    
+   
     .circular-button:hover {
         transform: scale(1.1);
         background-color: #333;
-    }
+    } 
     
     .circular-button i {
         color: white;
@@ -354,14 +354,7 @@
         justify-content: center;
     }
     
-    /* Responsive adjustments */
-    @@media (max-width: 768px) {
-        .chat-container {
-            width: 90%;
-            height: 70vh;
-            right: 5%;
-        }
-    }
+    
 </style>
 
 <script>
@@ -391,13 +384,13 @@
         styleAssistantBtn.addEventListener('click', function() {
             // Show chat interface
             chatInterface.style.display = 'flex';
-            
+             
             // Adjust size for mobile screens
             if (window.innerWidth < 768) {
                 chatInterface.style.width = '90%';
                 chatInterface.style.height = '70vh';
                 chatInterface.style.right = '5%';
-            }
+            } 
             
             // Clear any previous messages
             chatMessages.innerHTML = '';
@@ -485,9 +478,9 @@
                     // Show user message
                     const userMsg = document.createElement('div');
                     userMsg.className = 'message user-message';
-                    userMsg.innerHTML = `<p>${message}</p>`;
-                    chatMessages.appendChild(userMsg);
-                    
+                    userMsg.innerHTML = `<p>${message}</p>`; @* Display user message *@
+                    chatMessages.appendChild(userMsg); @* Append user message to chat *@
+
                     // Clear input
                     userInput.value = '';
                     
@@ -506,14 +499,16 @@
             chatMessages.appendChild(loadingIndicator);
             chatMessages.scrollTop = chatMessages.scrollHeight;
             
-            // Make API call to get recommendations
+            // Make API call to get recommendations make HTTP request API endpoint 
             fetch('/api/StyleAssistant/recommendations', {
                 method: 'POST',
+                //headers: tell the server we're sending JSON data
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ productId: productId })
             })
+            //if successful, .json() parses the response body into a JavaScript object
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`API error: ${response.status}`);
@@ -821,7 +816,7 @@
         }
         
         // Handle window resize for responsive design
-        window.addEventListener('resize', function() {
+        @* window.addEventListener('resize', function() {
             if (chatInterface.style.display === 'flex') {
                 if (window.innerWidth < 768) {
                     chatInterface.style.width = '90%';
@@ -850,6 +845,6 @@
             if (touchEndY - touchStartY > 100) { // Swipe down of at least 100px
                 closeChat.click(); // Close the chat
             }
-        }, false);
+        }, false); *@
     }
 </script>

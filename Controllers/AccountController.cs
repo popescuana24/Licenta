@@ -13,6 +13,7 @@ namespace ClothingWebApp.Controllers
    
     public class AccountController : Controller
     {
+        
         private readonly ApplicationDbContext _context;
         
         public AccountController(ApplicationDbContext context)
@@ -21,45 +22,46 @@ namespace ClothingWebApp.Controllers
         }
         
         // GET method for the login page
-        // Stores the returnUrl (where to redirect after login) in ViewBag
+        // in returnUrl i store the page where to redirect after log in in Viewbag 
         public IActionResult Login(string returnUrl = "")
         {
             ViewBag.ReturnUrl = returnUrl;
             return View();
         }
         
-        //POST method for login form submission
+        //POST method 
          [HttpPost]
         public async Task<IActionResult> Login(string email, string password)
       { 
-       // Validate credentials
+       // check if the email and password are not empty
         if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
        {
-          ModelState.AddModelError("", "Email and password are required.");
+          ModelState.AddModelError("", "Email and password are required");
           return View();
        }
-    
+        
           var customer = await _context.Customers
+         
         .FirstOrDefaultAsync(c => c.Email.Equals(email));
         
         if (customer == null)
        {
-          ModelState.AddModelError("", "Invalid email or password.");
+          ModelState.AddModelError("", "Invalid email or password");
           return View();
        }
     
-       // Verify password
+       // here we verify if the password matches the hashed password stored in the database
        bool passwordVerified = BCrypt.Net.BCrypt.Verify(password, customer.Password);
     
         if (!passwordVerified){
-          ModelState.AddModelError("", "Invalid email or password.");
+          ModelState.AddModelError("", "Invalid email or password");
           return View();
     }
     
-      // Log in the user
+      // Log in the user- we call the method to create cookie and sign in user
        await LoginUser(customer);
     
-      // redirect to home page
+      
        return RedirectToAction("Index", "Home");
    }
         
@@ -70,22 +72,24 @@ namespace ClothingWebApp.Controllers
         {
             return View();
         }
-        
+
         //POST method for registration form submission
+
         [HttpPost]
         public async Task<IActionResult> Register(Customer customer){
-            // Quick validation
+           
             if (!ModelState.IsValid)
          {
              return View(customer);
         }
 
-            // Check for duplicate email
+      
+            //if it exists, add an error to the model state and return the view with the
             if (await _context.Customers.AnyAsync(c => c.Email == customer.Email))
-       {
-            ModelState.AddModelError("Email", "This email is already registered");
-            return View(customer);
-       }
+            {
+                ModelState.AddModelError("Email", "This email is already registered");
+                return View(customer);
+            }
     
             // Hash password and save
             customer.Password = BCrypt.Net.BCrypt.HashPassword(customer.Password);
@@ -94,22 +98,23 @@ namespace ClothingWebApp.Controllers
     
            // Log in and redirect
            await LoginUser(customer);
-           TempData["SuccessMessage"] = "Welcome! Your account has been created.";
+           TempData["SuccessMessage"] = "Welcome! Your account has been created!!";
     
+            
           return RedirectToAction("Index", "Home");
     }
    
        //LOGOUT
         public async Task<IActionResult> Logout()
         {
-            
-           
-           Response.Cookies.Append("CartCount", "0");
+            //When the user logs out, their cart count cookie is reset to 0
+            Response.Cookies.Append("CartCount", "0");
+            // Sign out the user by clearing the authentication cookie
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return RedirectToAction("Index", "Home");
         }
         
-        /// Shows the user profile
+        // Shows the user profile
         public async Task<IActionResult> Profile()
         {
             int customerId = GetCurrentUserId();
@@ -117,6 +122,7 @@ namespace ClothingWebApp.Controllers
             {
                 return RedirectToAction("Login");
             }
+            // fetches the record by primary key, else returns null
             var customer = await _context.Customers.FindAsync(customerId);
             if (customer == null)
             {
@@ -135,21 +141,27 @@ namespace ClothingWebApp.Controllers
             {
                 return RedirectToAction("Login");
             }
+            // Fetches the customer record by primary key
+            // If the customer is found, it returns the customer object to the view
             var customer = await _context.Customers.FindAsync(customerId);
             if (customer == null)
             {
+                // If the customer is not found, return a 404 Not Found response
                 return NotFound();
             }
             
             return View(customer);
         }
-     
+
         //POST method for profile update
         [HttpPost]
+        //we take the customer object as a parameter
         public async Task<IActionResult> EditProfile(Customer customer)
         {
+            //this model state is used to check if the model is valid means all required fields are filled correctly
             if (ModelState.IsValid)
             {
+                // loads the existing customer record from the database using the provided CustomerId from the form
                 var existingCustomer = await _context.Customers.FindAsync(customer.CustomerId);
                 if (existingCustomer == null)
                 {
@@ -158,13 +170,16 @@ namespace ClothingWebApp.Controllers
                 existingCustomer.FirstName = customer.FirstName;
                 existingCustomer.LastName = customer.LastName;
                 existingCustomer.Address = customer.Address;
+                //saves the changes to the database
                 await _context.SaveChangesAsync();
-                
-                TempData["SuccessMessage"] = "Profile updated successfully.";
-                return RedirectToAction(nameof(Profile));
+
+                TempData["SuccessMessage"] = "Profile updated successfully";
+                return RedirectToAction("Profile");
             }
+            // If the model state is not valid, return the view with the current customer data
             return View(customer);
         }
+
         //GET method for password change page
         public IActionResult ChangePassword()
         {
@@ -185,15 +200,17 @@ namespace ClothingWebApp.Controllers
         {
            return RedirectToAction("Login");
         }
+        // Check if the current password, new password, and confirm new password fields are not empty
          if (string.IsNullOrEmpty(currentPassword) || string.IsNullOrEmpty(newPassword) || string.IsNullOrEmpty(confirmNewPassword))
-       {
-          ModelState.AddModelError("", "All fields are required.");
-          return View();
-       }
+            {
+                ModelState.AddModelError("", "All fields are required!!");
+                //to return the view with the error message
+                return View();
+            }
     
         if (newPassword != confirmNewPassword)
        {
-          ModelState.AddModelError("", "New password and confirmation do not match.");
+          ModelState.AddModelError("", "New password and confirmation do not match");
           return View();
        }
        //Retrieves the customer from database
@@ -213,7 +230,7 @@ namespace ClothingWebApp.Controllers
          }
        else
         {
-            // For old customers, verify the old way
+            // pt parolele vechi
             passwordVerified = (customer.Password == currentPassword);
         }
     
@@ -230,29 +247,57 @@ namespace ClothingWebApp.Controllers
         TempData["SuccessMessage"] = "Password changed successfully.";
           return RedirectToAction(nameof(Profile));
         }
+
+        public async Task<IActionResult> OrderHistory()
+        {
+            int customerId = GetCurrentUserId();
+            if (customerId == 0)
+            {
+                return RedirectToAction("Login");
+            }
     
-    //methods that help to keep the details of a customer 
+            
+            var orders = await _context.Orders
+            .Where(o => o.CustomerId == customerId)
+            .Include(o => o.OrderItems)
+            .ThenInclude(oi => oi.Product)
+            .Include(o => o.Customer)
+            .OrderByDescending(o => o.OrderDate)
+            .ToListAsync();
+            //to the orders history page
+            return View(orders);
+        }
+
+        //methods that help to keep the details of a customer
+        //Customer object is passed as a parameter
         private async Task LoginUser(Customer customer)
         {
+            
+            //these claims are used to create an authentication cookie that keeps the user logged in
             var claims = new List<Claim>
             {
+                //$ concatenates the first and last name of the customer
                 new Claim(ClaimTypes.Name, $"{customer.FirstName} {customer.LastName}"),
                 new Claim(ClaimTypes.Email, customer.Email),
+                //name identifier-used to uniquely identify a user
                 new Claim(ClaimTypes.NameIdentifier, customer.CustomerId.ToString()),
                 new Claim("CustomerId", customer.CustomerId.ToString())
             };
-            
+            //groups these claims together and specifies the authentication scheme — here i use the cookie authentication scheme
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            
+            //HttpContext.SignInAsync creates an authentication cookie containing the user's claims
             await HttpContext.SignInAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme,
                 new ClaimsPrincipal(claimsIdentity),
+                // the cookie persists even after closing the browser
                 new AuthenticationProperties { IsPersistent = true });
         }
         
         // Helper method to get current user ID
         private int GetCurrentUserId()
         {
+            // Finds the claim with the type "CustomerId" in the current user's claims
+            // If the claim exists and can be parsed as an integer, it returns the user ID
             var userIdClaim = User.FindFirst("CustomerId");
             if (userIdClaim != null && int.TryParse(userIdClaim.Value, out int userId))
             {
@@ -262,25 +307,7 @@ namespace ClothingWebApp.Controllers
             return 0;
         }
          
-        public async Task<IActionResult> OrderHistory()
-    {
-        int customerId = GetCurrentUserId();
-        if (customerId == 0)
-        {
-            return RedirectToAction("Login");
-        }
-    
-    // Get all orders for this customer with related data
-         var orders = await _context.Orders
-            .Where(o => o.CustomerId == customerId)
-            .Include(o => o.OrderItems)
-            .ThenInclude(oi => oi.Product)
-            .Include(o => o.Customer)
-            .OrderByDescending(o => o.OrderDate)
-            .ToListAsync();
-    
-            return View(orders);
-    }
+        
         
         
     }

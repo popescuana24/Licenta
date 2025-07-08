@@ -97,7 +97,7 @@
         @RenderBody()
     </main>
 
-    <!-- Footer Section with just copyright -->
+    @* <!-- Footer Section with just copyright -->
     <footer class="footer text-white mt-5" style="background-color: black;">
         <div class="container">
             <div class="row">
@@ -106,13 +106,13 @@
                 </div>
             </div>
         </div>
-    </footer>
+    </footer> *@
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js"></script>
     
-    <!-- Mobile menu script -->
+    @* <!-- Mobile menu script -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Handle dropdown on mobile 
@@ -189,7 +189,7 @@
                 }
             });
         });
-    </script>
+    </script> *@
     
     @await RenderSectionAsync("Scripts", required: false)
 </body>

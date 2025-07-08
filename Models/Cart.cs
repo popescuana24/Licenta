@@ -18,10 +18,9 @@ namespace ClothingWebApp.Models
         
       
         //Navigation property to the associated Customer
-        public Customer? Customer { get; set; }
+        public Customer? Customer { get; set; } //? indicates that this property can be null 
         
-      
-        /// Deserialized colle ction of cart items, not stored in the database
+        //Deserialized colle ction of cart items, not stored in the database
         [NotMapped]
         public List<CartProduct> CartItems { get; set; } = new List<CartProduct>();
     }

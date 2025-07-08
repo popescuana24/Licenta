@@ -4,16 +4,18 @@
     ViewData["Title"] = "Order History";
 }
 
+@* Bootstrap grid*@
+
 <div class="container mt-5">
     <div class="row justify-content-center">
         <div class="col-lg-10">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h1 class="h3 mb-0">Order History</h1>
                 <a href="@Url.Action("Profile", "Account")" class="btn btn-outline-dark">
-                    <i class="fas fa-arrow-left me-1"></i> Back to Profile
+                    <i class="fas fa-arrow-left me-1"></i> Back to Profile @*font awesome icon *@
                 </a>
             </div>
-            
+            @* No orders message *@
             @if (!Model.Any())
             {
                 <div class="card">
@@ -29,6 +31,7 @@
             }
             else
             {
+                @*loop through orders *@
                 @foreach (var order in Model)
                 {
                     <div class="card mb-4">
@@ -39,11 +42,13 @@
                                     <small class="text-muted">Placed on @order.OrderDate.ToString("MMMM dd, yyyy")</small>
                                 </div>
                                 <div class="col-md-6 text-md-end">
+                                    @*format the number with 2 decimals with f2*@
                                     <span class="fw-bold">Total: $@order.TotalAmount.ToString("F2")</span>
                                 </div>
                             </div>
                         </div>
                         <div class="card-body">
+                            @*If order has items loop through them *@
                             @if (order.OrderItems.Any())
                             {
                                 <div class="row g-3">
@@ -87,8 +92,8 @@
 
 <style>
     .btn-primary {
-        background-color: #b10000;
-        border-color: #b10000;
+        background-color: #900000;
+        border-color: #900000;
     }
     
     .btn-primary:hover {

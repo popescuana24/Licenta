@@ -21,8 +21,7 @@ namespace ClothingWebApp.Models
         //Total amount of the order
         public decimal TotalAmount { get; set; }
         
-        // NEW: Collection of items in this order
-        // This provides the complete order history with products, quantities, and prices
+        // this is a list with all order history with products, quantities, and prices
         public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
     }
 }
