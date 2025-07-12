@@ -54,7 +54,6 @@ namespace ClothingWebApp.Controllers
             //using Include to load the related Category entity din care apartine
             var product = await _context.Products
                 .Include(p => p.Category)
-                //safely return the product or null if not found
                 .FirstOrDefaultAsync(p => p.ProductId == productId);
 
             if (product == null)
@@ -195,6 +194,8 @@ namespace ClothingWebApp.Controllers
         //takes paymentMethod as a parameter
         public async Task<IActionResult> PlaceOrder(string paymentMethod)
         {
+
+            
             var customer = await GetCurrentCustomer();
             if (customer == null)
             {

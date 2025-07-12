@@ -26,7 +26,7 @@ namespace ClothingWebApp.Controllers
             try
             {
                 //Calls an asynchronous service method GetMatchingProducts passing the product ID and category filter from the request
-                var result = await _styleService.GetMatchingProducts(request.ProductId, request.CategoryFilter);
+                var result = await _styleService.GetMatchingProducts(request.ProductId, request.CategoryFilter ?? string.Empty);
 
                 return Ok(new
                 {

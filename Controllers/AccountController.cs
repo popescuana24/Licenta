@@ -10,7 +10,6 @@ using BCrypt.Net;
 namespace ClothingWebApp.Controllers
 {
     
-   
     public class AccountController : Controller
     {
         
@@ -30,9 +29,9 @@ namespace ClothingWebApp.Controllers
         }
         
         //POST method 
-         [HttpPost]
+        [HttpPost]
         public async Task<IActionResult> Login(string email, string password)
-      { 
+        { 
        // check if the email and password are not empty
         if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
        {
@@ -158,7 +157,7 @@ namespace ClothingWebApp.Controllers
         //we take the customer object as a parameter
         public async Task<IActionResult> EditProfile(Customer customer)
         {
-            //this model state is used to check if the model is valid means all required fields are filled correctly
+            //check if the model is valid means all required fields are filled correctly
             if (ModelState.IsValid)
             {
                 // loads the existing customer record from the database using the provided CustomerId from the form
@@ -173,7 +172,7 @@ namespace ClothingWebApp.Controllers
                 //saves the changes to the database
                 await _context.SaveChangesAsync();
 
-                TempData["SuccessMessage"] = "Profile updated successfully";
+                //TempData["SuccessMessage"] = "Profile updated successfully";
                 return RedirectToAction("Profile");
             }
             // If the model state is not valid, return the view with the current customer data
@@ -243,9 +242,9 @@ namespace ClothingWebApp.Controllers
         // Hash the new password before saving
         customer.Password = BCrypt.Net.BCrypt.HashPassword(newPassword);
         await _context.SaveChangesAsync();
-    
-        TempData["SuccessMessage"] = "Password changed successfully.";
-          return RedirectToAction(nameof(Profile));
+
+            //TempData["SuccessMessage"] = "Password changed successfully.";
+            return RedirectToAction("Profile");
         }
 
         public async Task<IActionResult> OrderHistory()
@@ -281,6 +280,7 @@ namespace ClothingWebApp.Controllers
                 new Claim(ClaimTypes.Email, customer.Email),
                 //name identifier-used to uniquely identify a user
                 new Claim(ClaimTypes.NameIdentifier, customer.CustomerId.ToString()),
+                //stores the customer ID as a claim
                 new Claim("CustomerId", customer.CustomerId.ToString())
             };
             //groups these claims together and specifies the authentication scheme — here i use the cookie authentication scheme
@@ -296,7 +296,7 @@ namespace ClothingWebApp.Controllers
         // Helper method to get current user ID
         private int GetCurrentUserId()
         {
-            // Finds the claim with the type "CustomerId" in the current user's claims
+            // extracts the user ID from the claims of the currently authenticated user
             // If the claim exists and can be parsed as an integer, it returns the user ID
             var userIdClaim = User.FindFirst("CustomerId");
             if (userIdClaim != null && int.TryParse(userIdClaim.Value, out int userId))

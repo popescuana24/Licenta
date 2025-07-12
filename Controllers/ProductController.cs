@@ -48,79 +48,79 @@ namespace ClothingWebApp.Controllers
             return View(product);
         }
         
-        [HttpGet]
-        public async Task<IActionResult> Edit(int id)
-        {
-            var product = await _context.Products.FindAsync(id); // Finds the product by ID
-            if (product == null)
-            {
-                return NotFound();
-            }
+        // [HttpGet]
+        // public async Task<IActionResult> Edit(int id)
+        // {
+        //     var product = await _context.Products.FindAsync(id); // Finds the product by ID
+        //     if (product == null)
+        //     {
+        //         return NotFound();
+        //     }
             
-            ViewData["CategoryId"] = new SelectList(await _context.Categories.ToListAsync(), "CategoryId", "Name", product.CategoryId); // Populates the dropdown for categories
-            return View(product);
-        }
+        //     ViewData["CategoryId"] = new SelectList(await _context.Categories.ToListAsync(), "CategoryId", "Name", product.CategoryId); // Populates the dropdown for categories
+        //     return View(product);
+        // }
         
-        [HttpPost]
-        public async Task<IActionResult> Edit(int id, Product product)
-        {
-            if (id != product.ProductId)
-            {
-                return NotFound();
-            }
+        // [HttpPost]
+        // public async Task<IActionResult> Edit(int id, Product product)
+        // {
+        //     if (id != product.ProductId)
+        //     {
+        //         return NotFound();
+        //     }
             
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    _context.Update(product);
-                    await _context.SaveChangesAsync(); // Saves changes to the database
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!ProductExists(product.ProductId))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
-            }
+        //     if (ModelState.IsValid)
+        //     {
+        //         try
+        //         {
+        //             _context.Update(product);
+        //             await _context.SaveChangesAsync(); // Saves changes to the database
+        //         }
+        //         catch (DbUpdateConcurrencyException)
+        //         {
+        //             if (!ProductExists(product.ProductId))
+        //             {
+        //                 return NotFound();
+        //             }
+        //             else
+        //             {
+        //                 throw;
+        //             }
+        //         }
+        //         return RedirectToAction(nameof(Index));
+        //     }
             
-            ViewData["CategoryId"] = new SelectList(await _context.Categories.ToListAsync(), "CategoryId", "Name", product.CategoryId);// Re-populate the category dropdown in case of validation errors
-            return View(product);
-        }
+        //     ViewData["CategoryId"] = new SelectList(await _context.Categories.ToListAsync(), "CategoryId", "Name", product.CategoryId);// Re-populate the category dropdown in case of validation errors
+        //     return View(product);
+        // }
         
-        //delete method
-        [HttpPost]
-        public async Task<IActionResult> Delete(int id)
-        {
-            var product = await _context.Products.FindAsync(id);
-            if (product == null)
-            {
-                return NotFound();
-            }
+        // //delete method
+        // [HttpPost]
+        // public async Task<IActionResult> Delete(int id)
+        // {
+        //     var product = await _context.Products.FindAsync(id);
+        //     if (product == null)
+        //     {
+        //         return NotFound();
+        //     }
             
-            try
-            {
-                _context.Products.Remove(product); // Removes the product from the context
-                await _context.SaveChangesAsync(); // Deletes the product from the database
-                TempData["SuccessMessage"] = "Product deleted successfully.";
-            }
-            catch (Exception ex)
-            {
-                TempData["ErrorMessage"] = "Error deleting product: " + ex.Message;
-            }
+        //     try
+        //     {
+        //         _context.Products.Remove(product); // Removes the product from the context
+        //         await _context.SaveChangesAsync(); // Deletes the product from the database
+        //         TempData["SuccessMessage"] = "Product deleted successfully.";
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         TempData["ErrorMessage"] = "Error deleting product: " + ex.Message;
+        //     }
             
-            return RedirectToAction(nameof(Index));
-        }
+        //     return RedirectToAction(nameof(Index));
+        // }
         
-        private bool ProductExists(int id)
-        {
-            return _context.Products.Any(e => e.ProductId == id); // Checks if a product with the given ID exists
-        }
+        // private bool ProductExists(int id)
+        // {
+        //     return _context.Products.Any(e => e.ProductId == id); // Checks if a product with the given ID exists
+        // }
     }
 }

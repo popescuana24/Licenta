@@ -863,7 +863,6 @@ C:\ClothingWebApp\obj\Debug\net9.0\rjsmcshtml.dswa.cache.json
 C:\ClothingWebApp\obj\Debug\net9.0\scopedcss\Views\Shared\_Layout.cshtml.rz.scp.css
 C:\ClothingWebApp\obj\Debug\net9.0\scopedcss\bundle\ClothingWebApp.styles.css
 C:\ClothingWebApp\obj\Debug\net9.0\scopedcss\projectbundle\ClothingWebApp.bundle.scp.css
-C:\ClothingWebApp\obj\Debug\net9.0\compressed\1hcnm7s00x-5bm7u5i925.gz
 C:\ClothingWebApp\obj\Debug\net9.0\compressed\lfkz27y52w-61n19gt1b8.gz
 C:\ClothingWebApp\obj\Debug\net9.0\compressed\fi36um30w9-b9sayid5wm.gz
 C:\ClothingWebApp\obj\Debug\net9.0\compressed\5qsel7umme-xtxxf3hu2r.gz
@@ -938,3 +937,4 @@ C:\ClothingWebApp\obj\Debug\net9.0\ClothingWebApp.genruntimeconfig.cache
 C:\ClothingWebApp\obj\Debug\net9.0\ref\ClothingWebApp.dll
 C:\ClothingWebApp\obj\Debug\net9.0\compressed\4z057m7uf2-5jo2f5qxa5.gz
 C:\ClothingWebApp\obj\Debug\net9.0\compressed\e5mggzkz7h-5jo2f5qxa5.gz
+C:\ClothingWebApp\obj\Debug\net9.0\compressed\1hcnm7s00x-7259qu9fzt.gz

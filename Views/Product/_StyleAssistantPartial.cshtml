@@ -273,6 +273,7 @@
 
     .products-grid .product-card:hover {
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
     }
 
     /* Product Image Container */
@@ -318,28 +319,12 @@
         margin-bottom: 8px;
     }
 
-    /* Add to Cart Button */
-    .products-grid .add-to-cart-btn {
-        width: 100%;
-        background-color: #b00000;
-        color: white;
-        border: none;
-        border-radius: 0;
-        padding: 8px 0;
-        font-size: 12px;
-        font-weight: 500;
-        cursor: pointer;
-    }
-
-    .products-grid .add-to-cart-btn:hover {
-        background-color: #8e0000;
-    }
-
     /* Product Link in Chat */
     .product-link {
         display: block;
         text-decoration: none;
         color: inherit;
+        transition: all 0.2s;
     }
 
     .product-link:hover {
@@ -353,8 +338,6 @@
         align-items: center;
         justify-content: center;
     }
-    
-    
 </style>
 
 <script>
@@ -384,13 +367,6 @@
         styleAssistantBtn.addEventListener('click', function() {
             // Show chat interface
             chatInterface.style.display = 'flex';
-             
-            // Adjust size for mobile screens
-            if (window.innerWidth < 768) {
-                chatInterface.style.width = '90%';
-                chatInterface.style.height = '70vh';
-                chatInterface.style.right = '5%';
-            } 
             
             // Clear any previous messages
             chatMessages.innerHTML = '';
@@ -478,8 +454,8 @@
                     // Show user message
                     const userMsg = document.createElement('div');
                     userMsg.className = 'message user-message';
-                    userMsg.innerHTML = `<p>${message}</p>`; @* Display user message *@
-                    chatMessages.appendChild(userMsg); @* Append user message to chat *@
+                    userMsg.innerHTML = `<p>${message}</p>`;
+                    chatMessages.appendChild(userMsg);
 
                     // Clear input
                     userInput.value = '';
@@ -499,29 +475,22 @@
             chatMessages.appendChild(loadingIndicator);
             chatMessages.scrollTop = chatMessages.scrollHeight;
             
-            // Make API call to get recommendations make HTTP request API endpoint 
+            // Make API call to get recommendations
             fetch('/api/StyleAssistant/recommendations', {
                 method: 'POST',
-                //headers: tell the server we're sending JSON data
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ productId: productId })
             })
-            //if successful, .json() parses the response body into a JavaScript object
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`API error: ${response.status}`);
-                }
-                return response.json();
-            })
+            .then(response => response.json())
             .then(data => {
                 console.log("Received recommendation data:", data);
                 
                 // Remove loading indicator
                 chatMessages.removeChild(loadingIndicator);
                 
-                // Skip the text response and directly show products instead
+                // Show products if available
                 if (data.recommendedProducts && data.recommendedProducts.length > 0) {
                     createProductDisplay(data.recommendedProducts);
                 } else {
@@ -535,9 +504,7 @@
                 console.error("Error getting recommendations:", error);
                 
                 // Remove loading indicator
-                try {
-                    chatMessages.removeChild(loadingIndicator);
-                } catch(e) { /* ignore if already removed */ }
+                chatMessages.removeChild(loadingIndicator);
                 
                 // Show error message
                 const errorMsg = document.createElement('div');
@@ -572,9 +539,7 @@
                 console.log("Chat response:", data);
                 
                 // Remove loading indicator
-                try {
-                    chatMessages.removeChild(loadingIndicator);
-                } catch(e) { /* ignore if already removed */ }
+                chatMessages.removeChild(loadingIndicator);
                 
                 // Format message with line breaks
                 const formattedMessage = data.message.replace(/\n/g, '<br>');
@@ -597,9 +562,7 @@
                 console.error("Error sending message:", error);
                 
                 // Remove loading indicator
-                try {
-                    chatMessages.removeChild(loadingIndicator);
-                } catch(e) { /* ignore if already removed */ }
+                chatMessages.removeChild(loadingIndicator);
                 
                 // Show error message
                 const errorMsg = document.createElement('div');
@@ -670,20 +633,18 @@
                 
                 // Add each product
                 categoryProducts.forEach(product => {
-                    // Create product card
-                    const card = document.createElement('div');
+                    // Create product card as clickable link
+                    const card = document.createElement('a');
+                    card.href = `/Product/Details/${product.productId}`;
+                    card.className = 'product-link';
                     card.style.border = '1px solid #eee';
                     card.style.borderRadius = '8px';
                     card.style.overflow = 'hidden';
                     card.style.marginBottom = '16px';
                     card.style.backgroundColor = 'white';
-                    
-                    // Create product link
-                    const link = document.createElement('a');
-                    link.href = `/Product/Details/${product.productId}`;
-                    link.style.textDecoration = 'none';
-                    link.style.color = 'inherit';
-                    link.style.display = 'block';
+                    card.style.display = 'block';
+                    card.style.textDecoration = 'none';
+                    card.style.color = 'inherit';
                     
                     // Create image container
                     const imageContainer = document.createElement('div');
@@ -713,14 +674,12 @@
                     
                     // Set fallback image
                     img.onerror = function() {
-                        this.onerror = null;
                         this.src = '/images/products/no-image.jpg';
                     };
                     
                     // Assemble image container
                     imageContainer.appendChild(img);
-                    link.appendChild(imageContainer);
-                    card.appendChild(link);
+                    card.appendChild(imageContainer);
                     
                     // Create product info section
                     const infoDiv = document.createElement('div');
@@ -728,19 +687,16 @@
                     infoDiv.style.textAlign = 'center';
                     
                     // Product name
-                    const nameLink = document.createElement('a');
-                    nameLink.href = `/Product/Details/${product.productId}`;
-                    nameLink.textContent = product.name;
-                    nameLink.style.fontSize = '14px';
-                    nameLink.style.fontWeight = '500';
-                    nameLink.style.color = '#000';
-                    nameLink.style.textDecoration = 'none';
-                    nameLink.style.display = 'block';
-                    nameLink.style.whiteSpace = 'nowrap';
-                    nameLink.style.overflow = 'hidden';
-                    nameLink.style.textOverflow = 'ellipsis';
-                    nameLink.style.marginBottom = '2px';
-                    infoDiv.appendChild(nameLink);
+                    const nameDiv = document.createElement('div');
+                    nameDiv.textContent = product.name;
+                    nameDiv.style.fontSize = '14px';
+                    nameDiv.style.fontWeight = '500';
+                    nameDiv.style.color = '#000';
+                    nameDiv.style.whiteSpace = 'nowrap';
+                    nameDiv.style.overflow = 'hidden';
+                    nameDiv.style.textOverflow = 'ellipsis';
+                    nameDiv.style.marginBottom = '2px';
+                    infoDiv.appendChild(nameDiv);
                     
                     // Product color
                     if (product.color) {
@@ -761,44 +717,6 @@
                     priceDiv.style.marginBottom = '8px';
                     infoDiv.appendChild(priceDiv);
                     
-                    // Add to cart form
-                    const form = document.createElement('form');
-                    form.action = '/Cart/AddToCart';
-                    form.method = 'post';
-                    
-                    const productIdInput = document.createElement('input');
-                    productIdInput.type = 'hidden';
-                    productIdInput.name = 'productId';
-                    productIdInput.value = product.productId;
-                    form.appendChild(productIdInput);
-                    
-                    const sizeInput = document.createElement('input');
-                    sizeInput.type = 'hidden';
-                    sizeInput.name = 'selectedSize';
-                    sizeInput.value = 'M';
-                    form.appendChild(sizeInput);
-                    
-                    const submitButton = document.createElement('button');
-                    submitButton.type = 'submit';
-                    submitButton.textContent = 'Add to Cart';
-                    submitButton.style.width = '100%';
-                    submitButton.style.backgroundColor = '#b10000';
-                    submitButton.style.color = 'white';
-                    submitButton.style.border = 'none';
-                    submitButton.style.padding = '8px 0';
-                    submitButton.style.fontSize = '12px';
-                    submitButton.style.fontWeight = '500';
-                    submitButton.style.cursor = 'pointer';
-                    form.appendChild(submitButton);
-                    
-                    submitButton.addEventListener('mouseover', function() {
-                        this.style.backgroundColor = '#8e0000';
-                    });
-                    submitButton.addEventListener('mouseout', function() {
-                        this.style.backgroundColor = '#b10000';
-                    });
-                    
-                    infoDiv.appendChild(form);
                     card.appendChild(infoDiv);
                     
                     // Add card to grid
@@ -814,37 +732,5 @@
             // Scroll to bottom
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
-        
-        // Handle window resize for responsive design
-        @* window.addEventListener('resize', function() {
-            if (chatInterface.style.display === 'flex') {
-                if (window.innerWidth < 768) {
-                    chatInterface.style.width = '90%';
-                    chatInterface.style.height = '70vh';
-                    chatInterface.style.right = '5%';
-                } else if (window.innerWidth < 1024) {
-                    chatInterface.style.width = '400px';
-                    chatInterface.style.height = '550px';
-                    chatInterface.style.right = '40px';
-                } else {
-                    chatInterface.style.width = '350px';
-                    chatInterface.style.height = '500px';
-                    chatInterface.style.right = '30px';
-                }
-            }
-        });
-        
-        // Add swipe down to dismiss on mobile
-        let touchStartY = 0;
-        chatInterface.addEventListener('touchstart', function(e) {
-            touchStartY = e.changedTouches[0].screenY;
-        }, false);
-        
-        chatInterface.addEventListener('touchend', function(e) {
-            const touchEndY = e.changedTouches[0].screenY;
-            if (touchEndY - touchStartY > 100) { // Swipe down of at least 100px
-                closeChat.click(); // Close the chat
-            }
-        }, false); *@
     }
 </script>
